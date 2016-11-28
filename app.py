@@ -12,6 +12,11 @@ from bokeh.plotting import figure
 from bokeh.embed import file_html
 from bokeh.util.string import encode_utf8
 
+#todo remove demo
+#http://bokeh.pydata.org/en/latest/docs/user_guide/charts.html
+from bokeh.charts import Scatter, output_file, show
+from bokeh.sampledata.autompg import autompg as df
+
 app = flask.Flask(__name__)
 
 colors = {
@@ -43,12 +48,29 @@ def polynomial():
 
     # Create a polynomial line graph
     x = list(range(_from, to + 1))
-    fig = figure(title="Polynomial")
-    fig.line(x, [i ** 2 for i in x], color=color, line_width=2)
+    #fig = figure(title="Polynomial")
+    #fig.line(x, [i ** 2 for i in x], color=color, line_width=2)
+    
+    # todo remove demo
+    # http://bokeh.pydata.org/en/latest/docs/user_guide/embed.html
+    # todo +/- 10%
+    x_max = df['mpg'].max().round()
+    x_min = int(df['mpg'].min())
+
+    y_max = df['hp'].max().round()
+    y_min = int(df['hp'].min())    
+    
+    p1 = figure(x_range=(x_min, x_max),
+                y_range=(y_min, y_max),
+                plot_width=300, plot_height=300)
+    p1.scatter(df['mpg'], df['hp'], size=12, color=color, alpha=0.5)
+    plots = p1
+    script, div = components(plots)
 
     # For more details see:
     #   http://bokeh.pydata.org/en/latest/docs/user_guide/embedding.html#components
-    script, div = components(fig)
+    #script, div = components(fig)
+    # from and to isn't active right now
     html = flask.render_template(
         'layouts/index.html',
         plot_script=script, plot_div=div,
