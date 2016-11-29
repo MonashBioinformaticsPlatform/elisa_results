@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset='utf-8' />
+    <meta http-equiv='content-type' content='text/html; charset=utf-8' />
+
+    <title>Embed Demo</title>
+      
+    <link
+        href="http://cdn.pydata.org/bokeh/release/bokeh-0.12.3.min.css"
+        rel="stylesheet" type="text/css">
+    <link
+        href="http://cdn.pydata.org/bokeh/release/bokeh-widgets-0.12.3.min.css"
+        rel="stylesheet" type="text/css">
+
+    <script src="http://cdn.pydata.org/bokeh/release/bokeh-0.12.3.min.js"></script>
+    <script src="http://cdn.pydata.org/bokeh/release/bokeh-widgets-0.12.3.min.js"></script>
+      
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+      
+      <style>
+      #feedback { font-size: 1.4em; }
+      #selectable .ui-selecting { background: #FECA40; }
+      #selectable .ui-selected { background: #F39814; color: red; font-weight: bold }
+      #selectable { list-style-type: none; margin: 0; padding: 0; width: 850px; }
+      #selectable li { margin: 3px; padding: 10px 1px 1px 1px; float: left; width: 60px; height: 35px; font-size: 1.3em; text-align: center; }
+      </style>
+      <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+      <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+      <script>
+          $( function() {
+            $( "#selectable" ).selectable({
+              stop: function() {
+                var result = $( "#select-result" ).empty();
+                $( ".ui-selected", this ).each(function() {
+                  var index = $( "#selectable li" ).index( this );
+                  result.append( " #" + ( index ) );
+                });
+              }
+            });
+          } );
+      </script>        
+
+  </head>
+  <body>
+    <h1>Exclude Wells</h1>
+
+    <p id="feedback">
+    <span>You've selected:</span> <span id="select-result">none</span>.
+    </p>      
+    {{max_value}}
+      
+    <ol id="selectable">
+    <!-- woo! insane colour 'heat map' calculations -->
+    {% for r in wells %}
+        {% for n in r %}
+          <li style="background-color: rgb(245, 255, {{ 245-((n|int/max_value)*200)|int }})" class="ui-state-default">{{n}}</li>
+        {% endfor %}
+    {% endfor %}
+    </ol>      
+  </body>
+</html>
