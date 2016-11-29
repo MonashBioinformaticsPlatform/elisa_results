@@ -1,34 +1,18 @@
-<html>
-
-<head>
-  <!-- Plotly.js -->
-  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-    
-</head>
-
-<p>
-    Here's a simple Plotly plot - 
-    <a href="http://bit.ly/1Or9igj">plotly.js documentation</a>
-</p>
-
-<!-- Plots go in blank <div> elements. 
-    You can size them in the plot layout,
-    or give the div a size as shown here.
--->
-<div id="tester" style="width:90%;height:250px;"></div>
-
-    <script type="text/javascript">
-
-    TESTER = document.getElementById('tester');
-
-    Plotly.plot( TESTER, [{
-        x: [1, 2, 3, 4, 5],
-        y: [1, 2, 4, 8, 16] }], { 
-        margin: { t: 0 } } );
-
-    /* Current Plotly.js version */
-    /*console.log( Plotly.BUILD );*/
-
-    </script>
-    
-</html>
+    <p> Select your settings: </p>
+    <form name="color_button" method='GET'>
+        Color:
+        <select name="color">
+            <option value="Red">Red</option>
+            <option value="Green">Green</option>
+            <option value="Blue">Blue</option>
+            <option selected="selected" value="Black">Black</option>
+        </select>
+        <br>
+        From:
+        <input type="text" name="_from" value="{{ _from }}">
+        <br>
+        To:
+        <input type="text" name="to" value="{{ to }}">
+        <br>
+        <button type="submit">Submit</button>
+    </form>

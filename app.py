@@ -4,8 +4,9 @@ import flask
 
 import json
 
-import pandas as pd
+import csv, sys
 import numpy as np
+import pandas as pd
 
 from bokeh.embed import components
 from bokeh.plotting import figure
@@ -27,6 +28,98 @@ colors = {
 }
 
 
+def read_plate_file_to_csv(filename):
+    
+    csv_list = list()
+    
+    def get_csv_from_row(row):
+        return row.split('=')[1].split(' ')
+    
+    with open(filename) as f:
+        content = f.readlines()
+    
+    for line in content:
+        # -1 is not found
+        if line.find('Row') > 0:
+            csv_list.append(get_csv_from_row(line.strip()))
+            
+    return csv_list
+
+
+# from plate array to mapped plate array
+def get_mapped_plate(plate, filename='data/elisawells.csv',
+                 rows=8, cols=12):
+    import csv, sys
+    
+    row_count = 0
+    col_count = 0
+    
+    mapped_plate = list()
+       
+    with open(filename, 'rb') as f:
+        reader = csv.reader(f)
+        col_count_list = list()
+
+        for row in reader:
+            row_value = int(row[0])
+            ab2_value = float(row[1])
+    
+            well_pos = row_value
+            well_col = abs(well_pos/rows)
+            well_row = abs(well_pos%rows)-1
+            
+            mapped_plate.append((row_value, ab2_value, plate[well_row][well_col]))
+            
+    return mapped_plate
+
+
+def get_prot_concentration_step(p_high):
+    p = p_high
+
+    return [0, p/8.0, p/4.0, p/2.0, p]
+
+def get_coating_ab_step(a_high):
+    p = a_high
+
+    return [p/8.0, p/4.0, p/2.0, p]
+
+
+def get_well_attrs(mapped_plate, prot_concentration_high, coating_ab, ab2_step):
+    prot_step = get_prot_concentration_step(prot_concentration_high)
+    coating_step = get_coating_ab_step(coating_ab)
+
+    count = 0
+    well_attr = list()
+    for i in prot_step:
+        for j in coating_step:
+            for k in range(ab2_step):
+                # join both tuples
+                tmp_tup = ((j,i)+(mapped_plate[count]))
+                well_attr.append({'coating_ab': tmp_tup[0],
+                                  'prot': tmp_tup[1],
+                                  'well': tmp_tup[2],
+                                  'ab2': tmp_tup[3],
+                                  'value': float(tmp_tup[4]),
+                                 })
+                count = count + 1
+    return well_attr
+
+
+def read_plate_to_df(plate_file_csv,
+                    prot_concentration_high,
+                    coating_ab,
+                    ab2_step=4):
+
+    plate = read_plate_file_to_csv(plate_file_csv)
+    mapped_plate = get_mapped_plate(plate)
+    well_attr = get_well_attrs(mapped_plate,
+                               prot_concentration_high,
+                               coating_ab,
+                               ab2_step)
+    df = pd.DataFrame(well_attr)
+    return df
+
+
 def getitem(obj, item, default):
     if item not in obj:
         return default
@@ -34,8 +127,24 @@ def getitem(obj, item, default):
         return obj[item]
 
 
+def get_df_by_prot_conc(df, prot_conc):
+    return df[(df.prot == prot_conc)]
+
+
 @app.route("/")
 def polynomial():
+    
+    prot_concentration_high = 2.0
+    coating_ab = 4.0
+    rows = 8
+    cols = 12
+    plate_file = 'data/161102-001.CSV'
+    color_step = ['blue','red','green','purple']
+    
+    df = read_plate_to_df(plate_file,
+                     prot_concentration_high,
+                     coating_ab)
+    
     """ Very simple embedding of a polynomial chart"""
     # Grab the inputs arguments from the URL
     # This is automated by the button
@@ -54,29 +163,53 @@ def polynomial():
     # todo remove demo
     # http://bokeh.pydata.org/en/latest/docs/user_guide/embed.html
     # todo +/- 10%
+
+    #print df.prot.unique()
+    prot_conc = 1
+    prot_conc_0 = get_df_by_prot_conc(df, prot_conc) # not 0!
+    coating_steps = prot_conc_0.coating_ab.unique()   
+
+    # used as a factor (categorical x axis)
+    ab2_steps = prot_conc_0.ab2.unique()
+    
+    # used as a factor (categorical x axis)
+    ab2_factor = prot_conc_0.sort_values('ab2') \
+        .ab2.unique() \
+        .astype(str) \
+        .tolist()
     
     range_multiplier = 0.05 # 5%
-    x_max_val = df['mpg'].max()*range_multiplier
-    y_max_val = df['hp'].max()*range_multiplier
+    x_max_val = df['ab2'].max()*range_multiplier
+    y_max_val = df['value'].max()*range_multiplier
     
     # add to max for some room
-    x_max = round(df['mpg'].max() + x_max_val)
+    x_max = round(df['ab2'].max() + x_max_val)
     # remove from min for equal boundary
-    x_min = round(df['mpg'].min() - x_max_val)
+    x_min = round(df['ab2'].min() - x_max_val)
 
-    y_max = round(df['hp'].max() + y_max_val)
-    y_min = round(df['hp'].min() - y_max_val)
+    y_max = round(df['value'].max() + y_max_val)
+    y_min = round(df['value'].min() - y_max_val)
+
+
+    p = figure(x_range=ab2_factor,
+               y_range=(y_min, y_max),
+               title='Protein-S at %sng/ml' % prot_conc,
+               plot_width=1100, plot_height=600)
+    p.title.text_font_size = "20px"
+    p.title.align = "center"
     
-    
-    p1 = figure(x_range=(x_min, x_max),
-                y_range=(y_min, y_max),
-                plot_width=650, plot_height=450)
-    p1.scatter(df['mpg'], df['hp'], size=12, color='blue', alpha=0.5)
-    p2 = figure(x_range=(x_min, x_max),
-                y_range=(y_min, y_max),
-                plot_width=650, plot_height=450)
-    p2.scatter(df['mpg'], df['hp'], size=12, color='green', alpha=0.5)    
-    plots = [p1,p2]
+    c = 0
+    plots = list()
+    for coating in coating_steps:
+        
+        df_a = prot_conc_0[(prot_conc_0.coating_ab == coating)]
+
+        p.scatter(ab2_factor, df_a['value'], size=14,
+                  color=color_step[c], alpha=0.5,
+                  legend='Coating mAb: %s' % coating)    
+        c = c + 1
+
+    plots.append(p)
     script, div = components(plots)
 
     # For more details see:
