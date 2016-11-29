@@ -197,6 +197,38 @@ def get_plot_for_prot(df, prot_conc):
 
     return p   
 
+@app.route("/table")
+def table():
+    from datetime import date
+    from random import randint
+
+    from bokeh.io import output_file, show
+    from bokeh.layouts import widgetbox
+    from bokeh.models import ColumnDataSource
+    from bokeh.models.widgets import DataTable, DateFormatter, TableColumn
+
+    output_file("data_table.html")
+
+    data = dict(
+            dates=[date(2014, 3, i+1) for i in range(10)],
+            downloads=[randint(0, 100) for i in range(10)],
+        )
+    source = ColumnDataSource(data)
+
+    columns = [
+            TableColumn(field="dates", title="Date", formatter=DateFormatter()),
+            TableColumn(field="downloads", title="Downloads"),
+        ]
+    data_table = DataTable(source=source, columns=columns, width=400, height=280)
+    
+    script, div = components(data_table)
+    
+    html = flask.render_template(
+        'layouts/table.html',
+        plot_script=script, plot_div=div,
+    ) 
+    
+    return encode_utf8(html)
 
 @app.route("/")
 def polynomial():
@@ -205,7 +237,7 @@ def polynomial():
     coating_ab = 4.0
     rows = 8
     cols = 12
-    plate_file = 'data/161102-001.CSV'
+    plate_file = 'data/161102-003.CSV'
     
     df = read_plate_to_df(plate_file,
                      prot_concentration_high,
