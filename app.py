@@ -16,6 +16,7 @@ from bokeh.util.string import encode_utf8
 from bokeh.models import ColumnDataSource
 from bokeh.models import HoverTool
 from collections import OrderedDict
+from bokeh.models import Legend
 
 #todo remove demo
 #http://bokeh.pydata.org/en/latest/docs/user_guide/charts.html
@@ -169,7 +170,7 @@ def get_plot_for_prot(df, prot_conc):
                y_range=(y_min, y_max),
                tools="pan,box_zoom,reset,resize,save,crosshair,hover",
                title='Protein-S at %sng/ml' % prot_conc,
-               plot_width=820, plot_height=615)
+               plot_width=950, plot_height=615)
     p.title.text_font_size = "20px"
     p.title.align = "center"
     p.xaxis.axis_label = 'Detection Antibody ug/ml'
@@ -177,6 +178,7 @@ def get_plot_for_prot(df, prot_conc):
     
     c = 0   
 
+    legends = list()
     for coating in coating_steps:
         
         df_a = prot_conc_0[(prot_conc_0.coating_ab == coating)]
@@ -189,43 +191,41 @@ def get_plot_for_prot(df, prot_conc):
                                       ('Absorbance', '@value'),
                                       ('Coating mAb', '@coating_ab')]) 
         
-        p.circle_cross(df_a['ab2'].astype(str), df_a['value'], size=18,
+        point = p.circle_cross(df_a['ab2'].astype(str), df_a['value'], size=18,
                   color=color_step[c], fill_alpha=0.2, line_width=1,
-                  legend='Coating mAb: %s' % coating,
                   source=source)
+        
+        legends.append(('Coating mAb: %s' % coating, [point]))
+        
         c = c + 1
+        
 
+    legend = Legend(legends=legends, location=(0, -380))
+
+    p.add_layout(legend, 'right')
+        
     return p   
 
 @app.route("/table")
 def table():
-    from datetime import date
-    from random import randint
-
-    from bokeh.io import output_file, show
-    from bokeh.layouts import widgetbox
-    from bokeh.models import ColumnDataSource
-    from bokeh.models.widgets import DataTable, DateFormatter, TableColumn
-
-    output_file("data_table.html")
-
-    data = dict(
-            dates=[date(2014, 3, i+1) for i in range(10)],
-            downloads=[randint(0, 100) for i in range(10)],
-        )
-    source = ColumnDataSource(data)
-
-    columns = [
-            TableColumn(field="dates", title="Date", formatter=DateFormatter()),
-            TableColumn(field="downloads", title="Downloads"),
-        ]
-    data_table = DataTable(source=source, columns=columns, width=400, height=280)
     
-    script, div = components(data_table)
+    prot_concentration_high = 2.0
+    coating_ab = 4.0
+    rows = 8
+    cols = 12
+    plate_file = 'data/161102-001.CSV'
+    
+    df = read_plate_to_df(plate_file,
+                     prot_concentration_high,
+                     coating_ab)
+    
+    csv_list = read_plate_file_to_csv(plate_file)
+    max_value = int(df['value'].max())
     
     html = flask.render_template(
         'layouts/table.html',
-        plot_script=script, plot_div=div,
+        wells=csv_list,
+        max_value=max_value
     ) 
     
     return encode_utf8(html)
@@ -237,7 +237,7 @@ def polynomial():
     coating_ab = 4.0
     rows = 8
     cols = 12
-    plate_file = 'data/161102-003.CSV'
+    plate_file = 'data/161102-001.CSV'
     
     df = read_plate_to_df(plate_file,
                      prot_concentration_high,
@@ -285,4 +285,5 @@ def polynomial():
 
 if __name__ == "__main__":
     print(__doc__)
-    app.run()
+    #app.run()
+    app.run(host='0.0.0.0', port=5919)
