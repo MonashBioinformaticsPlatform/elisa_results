@@ -54,17 +54,29 @@ def polynomial():
     # todo remove demo
     # http://bokeh.pydata.org/en/latest/docs/user_guide/embed.html
     # todo +/- 10%
-    x_max = df['mpg'].max().round()
-    x_min = int(df['mpg'].min())
+    
+    range_multiplier = 0.05 # 5%
+    x_max_val = df['mpg'].max()*range_multiplier
+    y_max_val = df['hp'].max()*range_multiplier
+    
+    # add to max for some room
+    x_max = round(df['mpg'].max() + x_max_val)
+    # remove from min for equal boundary
+    x_min = round(df['mpg'].min() - x_max_val)
 
-    y_max = df['hp'].max().round()
-    y_min = int(df['hp'].min())    
+    y_max = round(df['hp'].max() + y_max_val)
+    y_min = round(df['hp'].min() - y_max_val)
+    
     
     p1 = figure(x_range=(x_min, x_max),
                 y_range=(y_min, y_max),
-                plot_width=300, plot_height=300)
-    p1.scatter(df['mpg'], df['hp'], size=12, color=color, alpha=0.5)
-    plots = p1
+                plot_width=650, plot_height=450)
+    p1.scatter(df['mpg'], df['hp'], size=12, color='blue', alpha=0.5)
+    p2 = figure(x_range=(x_min, x_max),
+                y_range=(y_min, y_max),
+                plot_width=650, plot_height=450)
+    p2.scatter(df['mpg'], df['hp'], size=12, color='green', alpha=0.5)    
+    plots = [p1,p2]
     script, div = components(plots)
 
     # For more details see:

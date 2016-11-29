@@ -15,8 +15,8 @@
 
     <script src="http://cdn.pydata.org/bokeh/release/bokeh-0.12.3.min.js"></script>
     <script src="http://cdn.pydata.org/bokeh/release/bokeh-widgets-0.12.3.min.js"></script>      
-
-    {{ plot_script|indent(4)|safe }}
+    
+    {{ plot_script|indent(4)|safe }}    
 
   </head>
   <body>
@@ -39,7 +39,9 @@
         <br>
         <button type="submit">Submit</button>
     </form>
-    {{ plot_div|indent(4)|safe }}
-    <p> Demonstrates some very simple embedding into a webpage</p>
+    {% for p in plot_div %}
+        {{ p|indent(4)|safe }}
+    {% endfor %}
+
   </body>
 </html>
