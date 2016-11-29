@@ -13,6 +13,10 @@ from bokeh.plotting import figure
 from bokeh.embed import file_html
 from bokeh.util.string import encode_utf8
 
+from bokeh.models import ColumnDataSource
+from bokeh.models import HoverTool
+from collections import OrderedDict
+
 #todo remove demo
 #http://bokeh.pydata.org/en/latest/docs/user_guide/charts.html
 from bokeh.charts import Scatter, output_file, show
@@ -163,20 +167,32 @@ def get_plot_for_prot(df, prot_conc):
 
     p = figure(x_range=ab2_factor,
                y_range=(y_min, y_max),
+               tools="pan,box_zoom,reset,resize,save,crosshair,hover",
                title='Protein-S at %sng/ml' % prot_conc,
-               plot_width=1100, plot_height=600)
+               plot_width=820, plot_height=615)
     p.title.text_font_size = "20px"
     p.title.align = "center"
+    p.xaxis.axis_label = 'Detection Antibody ug/ml'
+    p.yaxis.axis_label = 'Absorbance'
     
-    c = 0
+    c = 0   
 
     for coating in coating_steps:
         
         df_a = prot_conc_0[(prot_conc_0.coating_ab == coating)]
 
-        p.scatter(ab2_factor, df_a['value'], size=14,
-                  color=color_step[c], alpha=0.5,
-                  legend='Coating mAb: %s' % coating)    
+        col_df = df_a.reset_index() # move index to column.
+        source = ColumnDataSource(ColumnDataSource.from_df(col_df))
+
+        hover = p.select(dict(type=HoverTool))
+        hover.tooltips = OrderedDict([('Well', '@well'),
+                                      ('Absorbance', '@value'),
+                                      ('Coating mAb', '@coating_ab')]) 
+        
+        p.circle_cross(df_a['ab2'].astype(str), df_a['value'], size=18,
+                  color=color_step[c], fill_alpha=0.2, line_width=1,
+                  legend='Coating mAb: %s' % coating,
+                  source=source)
         c = c + 1
 
     return p   
