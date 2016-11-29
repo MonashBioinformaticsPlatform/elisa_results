@@ -131,42 +131,12 @@ def get_df_by_prot_conc(df, prot_conc):
     return df[(df.prot == prot_conc)]
 
 
-@app.route("/")
-def polynomial():
+def get_plot_for_prot(df, prot_conc):
     
-    prot_concentration_high = 2.0
-    coating_ab = 4.0
-    rows = 8
-    cols = 12
-    plate_file = 'data/161102-001.CSV'
     color_step = ['blue','red','green','purple']
-    
-    df = read_plate_to_df(plate_file,
-                     prot_concentration_high,
-                     coating_ab)
-    
-    """ Very simple embedding of a polynomial chart"""
-    # Grab the inputs arguments from the URL
-    # This is automated by the button
-    args = flask.request.args
 
-    # Get all the form arguments in the url with defaults
-    color = colors[getitem(args, 'color', 'Black')]
-    _from = int(getitem(args, '_from', 0))
-    to = int(getitem(args, 'to', 10))
-
-    # Create a polynomial line graph
-    x = list(range(_from, to + 1))
-    #fig = figure(title="Polynomial")
-    #fig.line(x, [i ** 2 for i in x], color=color, line_width=2)
-    
-    # todo remove demo
-    # http://bokeh.pydata.org/en/latest/docs/user_guide/embed.html
-    # todo +/- 10%
-
-    #print df.prot.unique()
-    prot_conc = 1
     prot_conc_0 = get_df_by_prot_conc(df, prot_conc) # not 0!
+    
     coating_steps = prot_conc_0.coating_ab.unique()   
 
     # used as a factor (categorical x axis)
@@ -199,7 +169,7 @@ def polynomial():
     p.title.align = "center"
     
     c = 0
-    plots = list()
+
     for coating in coating_steps:
         
         df_a = prot_conc_0[(prot_conc_0.coating_ab == coating)]
@@ -209,7 +179,49 @@ def polynomial():
                   legend='Coating mAb: %s' % coating)    
         c = c + 1
 
-    plots.append(p)
+    return p   
+
+
+@app.route("/")
+def polynomial():
+    
+    prot_concentration_high = 2.0
+    coating_ab = 4.0
+    rows = 8
+    cols = 12
+    plate_file = 'data/161102-001.CSV'
+    
+    df = read_plate_to_df(plate_file,
+                     prot_concentration_high,
+                     coating_ab)
+    
+    """ Very simple embedding of a polynomial chart"""
+    # Grab the inputs arguments from the URL
+    # This is automated by the button
+    args = flask.request.args
+
+    # Get all the form arguments in the url with defaults
+    color = colors[getitem(args, 'color', 'Black')]
+    _from = int(getitem(args, '_from', 0))
+    to = int(getitem(args, 'to', 10))
+
+    # Create a polynomial line graph
+    x = list(range(_from, to + 1))
+    #fig = figure(title="Polynomial")
+    #fig.line(x, [i ** 2 for i in x], color=color, line_width=2)
+    
+    # todo remove demo
+    # http://bokeh.pydata.org/en/latest/docs/user_guide/embed.html
+    # todo +/- 10%
+
+    #print df.prot.unique()
+
+    plots = list()
+    for prot_conc in df.sort_values('prot').prot.unique():
+        
+        p = get_plot_for_prot(df, prot_conc)
+        plots.append(p)
+    
     script, div = components(plots)
 
     # For more details see:

@@ -21,9 +21,10 @@
   </head>
   <body>
     <!-- A simple form for changing the graph -->
-    <div style="margin: 20px;">
     {% for p in plot_div %}
+      <div style="margin: 20px;">
         {{ p|indent(4)|safe }}
+      </div>
     {% endfor %}
     </div>
   </body>
