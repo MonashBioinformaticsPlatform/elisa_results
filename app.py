@@ -252,9 +252,11 @@ def polynomial():
                                                default=4.0,
                                                type=float)
     
-    excl = request.args.get('exclude',
-                                               default='')
+    excl = request.args.getlist('exclude')
     
+    print('EXCLUDE')
+    print(excl)
+
     rows = 8.0
     cols = 12.0
 
@@ -267,12 +269,10 @@ def polynomial():
     # exclude
     df.loc[:,'exclude'] = pd.Series(False, index=df.index)
     
-    if excl != '':
-
-        for e in excl.split(','):
-            e = int(e)
-            e_well = get_well_num_from_table_select_num(e, rows, cols)
-            df.loc[df.well == e_well,('exclude')] = True
+    for e in excl:
+        e = int(e)
+        e_well = get_well_num_from_table_select_num(e, rows, cols)
+        df.loc[df.well == e_well,('exclude')] = True
     
 
     plots = list()
