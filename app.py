@@ -1,6 +1,7 @@
 from __future__ import print_function
 
 import flask
+from flask import stream_with_context, request, Response
 
 import json
 
@@ -232,9 +233,18 @@ def table():
 
 @app.route("/")
 def polynomial():
+
+    prot_concentration_high = request.args.get('prot_conc',
+                                               default=2.0,
+                                               type=float)
     
-    prot_concentration_high = 2.0
-    coating_ab = 4.0
+    coating_ab = request.args.get('coating_ab',
+                                               default=4.0,
+                                               type=float)
+    
+    excl = request.args.get('exclude',
+                                               default=None)
+    
     rows = 8
     cols = 12
     plate_file = 'data/161102-001.CSV'
@@ -243,31 +253,23 @@ def polynomial():
                      prot_concentration_high,
                      coating_ab)
     
-    """ Very simple embedding of a polynomial chart"""
-    # Grab the inputs arguments from the URL
-    # This is automated by the button
-    args = flask.request.args
-
-    # Get all the form arguments in the url with defaults
-    color = colors[getitem(args, 'color', 'Black')]
-    _from = int(getitem(args, '_from', 0))
-    to = int(getitem(args, 'to', 10))
-
-    # Create a polynomial line graph
-    x = list(range(_from, to + 1))
-    #fig = figure(title="Polynomial")
-    #fig.line(x, [i ** 2 for i in x], color=color, line_width=2)
+    # exclude
+    # TODO test exclude
     
-    # todo remove demo
-    # http://bokeh.pydata.org/en/latest/docs/user_guide/embed.html
-    # todo +/- 10%
-
-    #print df.prot.unique()
+    if excl != None:
+        print(excl)
+        print(type(excl))
+        print("********")
+    
+    df.loc[:,'exclude'] = pd.Series(False, index=df.index)
+    
+    for e in excl.split(','):
+        df.loc[int(e),('exclude')] = True
 
     plots = list()
     for prot_conc in df.sort_values('prot').prot.unique():
         
-        p = get_plot_for_prot(df, prot_conc)
+        p = get_plot_for_prot(df[(df.exclude == False)], prot_conc)
         plots.append(p)
     
     script, div = components(plots)
@@ -279,7 +281,6 @@ def polynomial():
     html = flask.render_template(
         'layouts/index.html',
         plot_script=script, plot_div=div,
-        color=color, _from=_from, to=to
     )
     return encode_utf8(html)
 
