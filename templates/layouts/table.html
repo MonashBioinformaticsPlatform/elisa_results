@@ -29,18 +29,62 @@
       </style>
       <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
       <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+      
       <script>
+        var getUrlParameter = function getUrlParameter(sParam) {
+            var sPageURL = decodeURIComponent(window.location.search.substring(1)),
+                sURLVariables = sPageURL.split('&'),
+                sParameterName,
+                i;
+
+            for (i = 0; i < sURLVariables.length; i++) {
+                sParameterName = sURLVariables[i].split('=');
+
+                if (sParameterName[0] === sParam) {
+                    return sParameterName[1] === undefined ? true : sParameterName[1];
+                }
+            }
+        };          
+      </script>
+      
+      <script>
+          var exclude = getUrlParameter('exclude');
+          
+          if(exclude)
+          {
+              exclude = exclude.split(",")
+          }
+          
+            $.each(exclude, function( index, value ) {
+              //alert(value);
+            });
+          
+          
           $( function() {
             $( "#selectable" ).selectable({
               stop: function() {
                 var result = $( "#select-result" ).empty();
                 $( ".ui-selected", this ).each(function() {
                   var index = $( "#selectable li" ).index( this );
-                  result.append( " #" + ( index ) );
+                  result.append(( index ) + "," );
                 });
               }
             });
           } );
+          
+          
+        $(function() {
+            $('#selectable li').each(function(i, obj) {
+                var found = $.inArray($(this).index().toString(), exclude) > -1;
+                if(found)
+                {
+                      var result = $( "#select-result" );
+                      var index = $( "#selectable li" ).index( this );
+                      result.append( ( index ) + "," );
+                      $(this).addClass('ui-selected');
+                }
+            });
+        });          
       </script>        
 
   </head>
@@ -48,7 +92,7 @@
     <h1>Exclude Wells</h1>
 
     <p id="feedback">
-    <span>You've selected:</span> <span id="select-result">none</span>.
+    <span>Excluded wells (ctrl/cmd click and drag to add more)<br/></span> <span id="select-result"></span>
     </p>      
     {{max_value}}
       

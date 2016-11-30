@@ -143,6 +143,9 @@ def get_plot_for_prot(df, prot_conc):
 
     prot_conc_0 = get_df_by_prot_conc(df, prot_conc) # not 0!
     
+    if prot_conc_0.empty:
+        return None
+    
     coating_steps = prot_conc_0.coating_ab.unique()   
 
     # used as a factor (categorical x axis)
@@ -233,6 +236,13 @@ def table():
 
 @app.route("/")
 def polynomial():
+    
+    def get_well_num_from_table_select_num(num, rows, cols):
+        row_val = int((num)/cols)
+        col_val = int(num%cols)
+        numwise = (col_val*rows)+row_val
+        numwise = numwise+1 # human readable well
+        return numwise
 
     prot_concentration_high = request.args.get('prot_conc',
                                                default=2.0,
@@ -243,10 +253,11 @@ def polynomial():
                                                type=float)
     
     excl = request.args.get('exclude',
-                                               default=None)
+                                               default='')
     
-    rows = 8
-    cols = 12
+    rows = 8.0
+    cols = 12.0
+
     plate_file = 'data/161102-001.CSV'
     
     df = read_plate_to_df(plate_file,
@@ -254,23 +265,23 @@ def polynomial():
                      coating_ab)
     
     # exclude
-    # TODO test exclude
-    
-    if excl != None:
-        print(excl)
-        print(type(excl))
-        print("********")
-    
     df.loc[:,'exclude'] = pd.Series(False, index=df.index)
     
-    for e in excl.split(','):
-        df.loc[int(e),('exclude')] = True
+    if excl != '':
+
+        for e in excl.split(','):
+            e = int(e)
+            e_well = get_well_num_from_table_select_num(e, rows, cols)
+            df.loc[df.well == e_well,('exclude')] = True
+    
 
     plots = list()
     for prot_conc in df.sort_values('prot').prot.unique():
         
-        p = get_plot_for_prot(df[(df.exclude == False)], prot_conc)
-        plots.append(p)
+        if not df.empty:
+            p = get_plot_for_prot(df[(df.exclude == False)], prot_conc)
+            if p:
+                plots.append(p)
     
     script, div = components(plots)
 
