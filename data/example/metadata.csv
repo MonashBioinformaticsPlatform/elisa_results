@@ -1,0 +1,13 @@
+filename,metadata,coating_ab,coating_ab_units,prot,prot_units,ab2,ab2_units,name
+161102-001.CSV,"[TP{001}, 02.11.2016, 14:10:59]
+MeasureMode=Sunrise_Measure
+Configuration 1=405:
+KineticsMeasTime 1=0",ab_one,ng/ml,m,ab_two,Mr Protein,ug/ml,myreport
+161102-002.CSV,"[TP{001}, 02.11.2016, 14:10:59]
+MeasureMode=Sunrise_Measure
+Configuration 1=405:
+KineticsMeasTime 1=0",ab_one,ng/ml,m,ab_two,Mr Protein,ug/ml,myreport
+161102-003.CSV,"[TP{001}, 02.11.2016, 14:10:59]
+MeasureMode=Sunrise_Measure
+Configuration 1=405:
+KineticsMeasTime 1=0",ab_one,ng/ml,m,ab_two,Mr Protein,ug/ml,myreport
