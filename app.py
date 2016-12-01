@@ -265,6 +265,9 @@ def polynomial():
     df = read_plate_to_df(plate_file,
                      prot_concentration_high,
                      coating_ab)
+
+    csv_list = read_plate_file_to_csv(plate_file)
+    max_value = int(df['value'].max())
     
     # exclude
     df.loc[:,'exclude'] = pd.Series(False, index=df.index)
@@ -292,6 +295,8 @@ def polynomial():
     html = flask.render_template(
         'layouts/index.html',
         plot_script=script, plot_div=div,
+        wells=csv_list,
+        max_value=max_value
     )
     return encode_utf8(html)
 

@@ -18,14 +18,131 @@
     
     {{ plot_script|indent(4)|safe }}    
 
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+      
+      <style>
+      body { font-family: "Helvetica Neue",Helvetica,Arial,sans-serif; }
+      #feedback { font-size: 1.4em; }
+      #selectable .ui-selecting { background: #FECA40; }
+      #selectable .ui-selected { background: #F39814; color: red; font-weight: bold }
+      #selectable { list-style-type: none; margin: 0; padding: 0; width: 850px; }
+      #selectable li { margin: 3px; padding: 10px 1px 1px 1px; float: left; width: 60px; height: 35px; font-size: 1.3em; text-align: center; }
+      </style>
+      <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+      <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+      
+      <script>
+        function parseURLParams(url) {
+            var queryStart = url.indexOf("?") + 1,
+                queryEnd   = url.indexOf("#") + 1 || url.length + 1,
+                query = url.slice(queryStart, queryEnd - 1),
+                pairs = query.replace(/\+/g, " ").split("&"),
+                parms = {}, i, n, v, nv;
+
+            if (query === url || query === "") {
+                return;
+            }
+
+            for (i = 0; i < pairs.length; i++) {
+                nv = pairs[i].split("=");
+                n = decodeURIComponent(nv[0]);
+                v = decodeURIComponent(nv[1]);
+
+                if (!parms.hasOwnProperty(n)) {
+                    parms[n] = [];
+                }
+
+                parms[n].push(nv.length === 2 ? v : null);
+            }
+            return parms;
+        };          
+      </script>
+      
+      <script>
+          var url = window.location.href;
+          var parsedURL = parseURLParams(url);
+          
+          if(parsedURL){
+              if('exclude' in parsedURL)
+              {   
+                var exclude = parsedURL['exclude']           
+              }
+          }
+          
+            $.each(exclude, function( index, value ) {
+              //alert(value);
+            });
+          
+          
+          $( function() {
+            $( "#selectable" ).selectable({
+              stop: function() {
+                var result = $( "#select-result" ).empty();
+                var wrapper = $(".input_fields_wrap").empty();
+                $(wrapper).empty();
+                $( ".ui-selected", this ).each(function() {
+                  var index = $( "#selectable li" ).index( this );
+                  //result.append(( index ) + "," );
+                    
+                  wrapper.append('<div><input type="hidden"' +
+                      ' name="exclude" value="' + index + '"/></div>'); //add input box
+                });
+              }
+            });
+          } );
+          
+          
+        $(function() {
+            $('#selectable li').each(function(i, obj) {
+                var found = $.inArray($(this).index().toString(), exclude) > -1;
+
+                if(found)
+                {
+                      var result = $( "#select-result" );
+                      var wrapper = $(".input_fields_wrap");
+                      var index = $( "#selectable li" ).index( this );
+                      //result.append( ( index + "," ));
+                      $(this).addClass('ui-selected');
+                    
+                      wrapper.append('<div><input type="hidden"' +
+                      ' name="exclude[]" value="' + index + '"/></div>'); //add input box
+                }
+            });
+        });          
+      </script>  
+      
   </head>
   <body>
+      
+    <!-- Well exclude code -->
+    <p id="feedback">
+    <span>Click and drag to exclude wells (hold CTRL or CMD to select multiple).
+        <br/></span> <span id="select-result"></span>
+    <form action="." method="GET">  
+        <input style="margin-left: 750px" type="submit" value="Reload Graphs">
+        <div class="input_fields_wrap">
+        </div>
+    </form>
+    </p> 
+      
+    <ol id="selectable">
+    <!-- woo! insane colour 'heat map' calculations -->
+    {% for r in wells %}
+        {% for n in r %}
+          <li style="background-color: rgb(245, 255, {{ 245-((n|int/max_value)*200)|int }})" class="ui-state-default">{{n}}</li>
+        {% endfor %}
+    {% endfor %}
+    </ol>  
+      
+    <div class="spacer" style="height: 450px;"></div>
+    
     <!-- A simple form for changing the graph -->
     {% for p in plot_div %}
       <div style="margin: 20px;">
         {{ p|indent(4)|safe }}
       </div>
     {% endfor %}
-    </div>
   </body>
 </html>
