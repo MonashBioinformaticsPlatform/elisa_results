@@ -172,7 +172,7 @@ def get_plot_for_prot(df, prot_conc):
 
     p = figure(x_range=ab2_factor,
                y_range=(y_min, y_max),
-               tools="pan,box_zoom,reset,resize,save,crosshair,hover",
+               tools="pan,box_zoom,reset,save,hover",
                title='Protein-S at %sng/ml' % prot_conc,
                plot_width=950, plot_height=615)
     p.title.text_font_size = "20px"

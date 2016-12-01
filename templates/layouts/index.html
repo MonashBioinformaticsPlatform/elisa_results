@@ -24,11 +24,11 @@
       
       <style>
       body { font-family: "Helvetica Neue",Helvetica,Arial,sans-serif; }
-      #feedback { font-size: 1.4em; }
+      #feedback { font-size: 0.8em; margin-left: 5px; }
       #selectable .ui-selecting { background: #FECA40; }
       #selectable .ui-selected { background: #F39814; color: red; font-weight: bold }
       #selectable { list-style-type: none; margin: 0; padding: 0; width: 850px; }
-      #selectable li { margin: 3px; padding: 10px 1px 1px 1px; float: left; width: 60px; height: 35px; font-size: 1.3em; text-align: center; }
+      #selectable li { margin: 3px; padding: 12px 1px 1px 1px; float: left; width: 60px; height: 35px; font-size: 1.2em; text-align: center; }
       </style>
       <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
       <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
@@ -107,7 +107,7 @@
                       $(this).addClass('ui-selected');
                     
                       wrapper.append('<div><input type="hidden"' +
-                      ' name="exclude[]" value="' + index + '"/></div>'); //add input box
+                      ' name="exclude" value="' + index + '"/></div>'); //add input box
                 }
             });
         });          
@@ -117,15 +117,15 @@
   <body>
       
     <!-- Well exclude code -->
-    <p id="feedback">
-    <span>Click and drag to exclude wells (hold CTRL or CMD to select multiple).
-        <br/></span> <span id="select-result"></span>
     <form action="." method="GET">  
         <input style="margin-left: 750px" type="submit" value="Reload Graphs">
         <div class="input_fields_wrap">
+        <p id="feedback">
+        <span>Click and drag to exclude wells (hold CTRL or CMD to select multiple).
+            <br/></span> <span id="select-result"></span>            
+            </p>
         </div>
     </form>
-    </p> 
       
     <ol id="selectable">
     <!-- woo! insane colour 'heat map' calculations -->
