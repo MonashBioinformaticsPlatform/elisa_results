@@ -236,7 +236,15 @@ def get_df_by_prot_conc(df, prot_conc):
     return df[(df.prot == prot_conc)]
 
 
-def get_plot_for_prot(df, prot_conc):
+def get_plot_for_prot(df,
+                       coating_ab,
+                       prot,
+                       ab2,
+                       coating_ab_units,
+                       prot_units,
+                       ab2_units,
+                       prot_conc,
+                       name):    
     
     color_step = ['blue','red','green','purple']
 
@@ -272,11 +280,11 @@ def get_plot_for_prot(df, prot_conc):
     p = figure(x_range=ab2_factor,
                y_range=(y_min, y_max),
                tools="pan,box_zoom,reset,save,hover",
-               title='Protein-S at %sng/ml' % prot_conc,
+               title='Protein-S: %s at %s %s' % (prot,prot_conc,prot_units),
                plot_width=950, plot_height=615)
     p.title.text_font_size = "20px"
     p.title.align = "center"
-    p.xaxis.axis_label = 'Detection Antibody ug/ml'
+    p.xaxis.axis_label = 'Detection Antibody: %s %s' % (ab2, ab2_units)
     p.yaxis.axis_label = 'Absorbance'
     
     c = 0   
@@ -288,17 +296,19 @@ def get_plot_for_prot(df, prot_conc):
 
         col_df = df_a.reset_index() # move index to column.
         source = ColumnDataSource(ColumnDataSource.from_df(col_df))
+        
+        coating_name = 'Coating mAb: %s %s' % (coating_ab, coating_ab_units)
 
         hover = p.select(dict(type=HoverTool))
         hover.tooltips = OrderedDict([('Well', '@well'),
                                       ('Absorbance', '@value'),
-                                      ('Coating mAb', '@coating_ab')]) 
+                                      (coating_name, '@coating_ab')]) 
         
         point = p.circle_cross(df_a['ab2'].astype(str), df_a['value'], size=18,
                   color=color_step[c], fill_alpha=0.2, line_width=1,
                   source=source)
         
-        legends.append(('Coating mAb: %s' % coating, [point]))
+        legends.append(('%s %s' % (coating_name, coating), [point]))
         
         c = c + 1
         
@@ -402,7 +412,15 @@ def polynomial():
     for prot_conc in df.sort_values('prot').prot.unique():
         
         if not df.empty:
-            p = get_plot_for_prot(df[(df.exclude == False)], prot_conc)
+            p = get_plot_for_prot(df[(df.exclude == False)],
+                                  md[0]['coating_ab'],
+                                  md[0]['prot'],
+                                  md[0]['ab2'],
+                                  md[0]['coating_ab_units'],
+                                  md[0]['prot_units'],
+                                  md[0]['ab2_units'],
+                                  prot_conc,
+                                  md[0]['name'])
             if p:
                 plots.append(p)
     
@@ -446,7 +464,7 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
 
-@app.route('/upload', methods=['GET', 'POST'])
+@app.route('/upload', methods=['GET','POST'])
 def upload_file():
     if request.method == 'POST':
 
@@ -469,18 +487,18 @@ def upload_file():
                 filenames.append(filename)
         
         write_csv_metadata(save_dir,
-                       'coaty',
-                       'myprot',
-                       'ab2',
-                       'ABC',
-                       'IJK',
-                       'XYZ',
-                       float(4),
-                       float(2),
+                       request.form.get('coating_ab'),
+                       request.form.get('prot'),
+                       request.form.get('ab2'),
+                       request.form.get('coating_ab_units'),
+                       request.form.get('prot_units'),
+                       request.form.get('ab2_units'),
+                       float(request.form.get('coating_ab_max')),
+                       float(request.form.get('prot_max')),
                        filenames,
-                       'steve report test')
+                       request.form.get('name'))
         
-        return redirect(url_for('upload_file'))
+        return redirect(url_for('index_dirname', dirname=os.path.basename(save_dir)))
 
 #def write_csv_metadata(plate_dir,
 #                       coating_ab,
