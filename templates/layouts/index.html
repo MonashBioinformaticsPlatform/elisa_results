@@ -4,7 +4,7 @@
     <meta charset='utf-8' />
     <meta http-equiv='content-type' content='text/html; charset=utf-8' />
 
-    <title>ELISA Graphs</title>
+    <title>ELISA Graphs: {{md.filename}}</title>
       
     <link
         href="http://cdn.pydata.org/bokeh/release/bokeh-0.12.3.min.css"
@@ -115,9 +115,13 @@
       
   </head>
   <body>
+      <h1>{{md.name}}</h1>
+      <h2>Plate: {{md.filename}}</h2>
       
     <!-- Well exclude code -->
     <form action="." method="GET">  
+        <input type="hidden" name="plate_dir" value="{{plate_dir}}">
+        <input type="hidden" name="plate_name" value="{{plate_file}}">
         <input style="margin-left: 750px" type="submit" value="Reload Graphs">
         <div class="input_fields_wrap">
         <p id="feedback">

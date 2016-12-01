@@ -24,6 +24,13 @@ from bokeh.models import Legend
 from bokeh.charts import Scatter, output_file, show
 from bokeh.sampledata.autompg import autompg as df
 
+#settings.py
+import os, re
+from fnmatch import filter
+# __file__ refers to the file settings.py 
+APP_ROOT = os.path.dirname(os.path.abspath(__file__))   # refers to application_top
+APP_DATA = os.path.join(APP_ROOT, 'data')
+
 app = flask.Flask(__name__)
 
 colors = {
@@ -33,6 +40,83 @@ colors = {
     'Blue':  '#0000FF',
 }
 
+
+# get metadata from plate file csv
+def plate_metadata(plate_dir, plate_file):
+    
+    with open(filename) as f:
+        content = f.readlines()
+            
+    string_metadata = ''.join(content[:4]).strip()
+    return string_metadata
+
+
+# write metadata from robot csv to metadata.csv
+def write_csv_metadata(plate_dir,
+                       coating_ab,
+                       prot,
+                       ab2,
+                       coating_ab_units,
+                       prot_units,
+                       ab2_units,
+                       plate_files,
+                       name):
+    
+    # TODO random directory    
+
+    # TODO write mean set (mean function)
+
+    output_file = '%s\%s' % (plate_dir,output_file)
+
+    with open(output_file, 'w') as csvfile:
+        fieldnames = ['filename',
+                      'metadata',
+                     'coating_ab',
+                     'coating_ab_units',
+                     'prot',
+                     'prot_units',
+                     'ab2',
+                     'ab2_units',
+                     'name']
+
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+
+        writer.writeheader()
+        
+        for plate_file in plate_files:
+            # todo sort out the fact the ab/prot names are repeated
+            writer.writerow({'filename': plate_file,
+                             'metadata': plate_metadata(plate_dir, plate_file),
+                             'coating_ab': coating_ab,
+                             'coating_ab_units': coating_ab_units,
+                             'prot': prot,
+                             'prot_units': prot_units,
+                             'ab2': ab2,
+                             'ab2_units': ab2_units,
+                             'name': name,
+                            })
+
+            
+def get_index(directory):
+    
+    index = []
+    for x in os.walk('%s/' % directory):
+        path = x[0]
+        
+        r = {}
+        r['dir'] = path
+        r['dirname'] = os.path.basename(path)
+        
+        # first result is always parent dir
+        if r['dirname'] == '':
+            continue
+        
+        r['metadata'] = read_plate_file_to_csv_metadata(path)        
+        
+        index.append(r)
+    
+    return index
+            
 
 def read_plate_file_to_csv(filename):
     
@@ -210,29 +294,29 @@ def get_plot_for_prot(df, prot_conc):
         
     return p   
 
-@app.route("/table")
-def table():
+def read_plate_file_to_csv_metadata(plate_dir,
+                           plate_filename=None,
+                           metadata_filename='metadata.csv'):
     
-    prot_concentration_high = 2.0
-    coating_ab = 4.0
-    rows = 8
-    cols = 12
-    plate_file = 'data/161102-001.CSV'
+    csv_list = list()
+    metadata_file = '%s/%s' % (plate_dir, metadata_filename)
     
-    df = read_plate_to_df(plate_file,
-                     prot_concentration_high,
-                     coating_ab)
+    def get_csv_from_row(row):
+        return row.split('=')[1].split(' ')
     
-    csv_list = read_plate_file_to_csv(plate_file)
-    max_value = int(df['value'].max())
-    
-    html = flask.render_template(
-        'layouts/table.html',
-        wells=csv_list,
-        max_value=max_value
-    ) 
-    
-    return encode_utf8(html)
+    d = []
+    with open(metadata_file) as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            if plate_filename:
+                if plate_filename == \
+                    row['filename']:
+                        d.append(row)
+                        break
+            else:
+                d.append(row)
+
+    return d
 
 @app.route("/")
 def polynomial():
@@ -254,13 +338,19 @@ def polynomial():
     
     excl = request.args.getlist('exclude')
     
-    print('EXCLUDE')
-    print(excl)
+    plate_filename = request.args.get('plate_file', default='161102-001.CSV')
+    
+    plate_dir = request.args.get('plate_dir', default='example')
+    plate_dirname = plate_dir
+    plate_dir = plate_dir.replace('\\','').replace('/','')
 
+    if plate_dir:
+        plate_dir = '%s/%s' % (APP_DATA, plate_dir)
+
+    plate_file = '%s/%s' % (plate_dir, plate_filename)
+        
     rows = 8.0
     cols = 12.0
-
-    plate_file = 'data/161102-001.CSV'
     
     df = read_plate_to_df(plate_file,
                      prot_concentration_high,
@@ -288,17 +378,31 @@ def polynomial():
     
     script, div = components(plots)
 
-    # For more details see:
-    #   http://bokeh.pydata.org/en/latest/docs/user_guide/embedding.html#components
-    #script, div = components(fig)
-    # from and to isn't active right now
+    md = read_plate_file_to_csv_metadata(plate_dir,
+                                         plate_filename)
+    
+    
     html = flask.render_template(
         'layouts/index.html',
         plot_script=script, plot_div=div,
         wells=csv_list,
-        max_value=max_value
+        max_value=max_value,
+        md=md[0],
+        plate_file=plate_filename,
+        plate_dir=plate_dirname
     )
     return encode_utf8(html)
+
+@app.route("/index")
+def index():
+
+    
+    html = flask.render_template(
+        'layouts/reports.html',
+        reports=get_index(APP_DATA)
+    )
+    return encode_utf8(html)
+
 
 if __name__ == "__main__":
     print(__doc__)
