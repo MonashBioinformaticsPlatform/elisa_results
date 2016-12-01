@@ -13,15 +13,14 @@
         href="http://cdn.pydata.org/bokeh/release/bokeh-widgets-0.12.3.min.css"
         rel="stylesheet" type="text/css">
       
+      <link rel=stylesheet type=text/css href="{{ url_for('static', filename='siimple.css') }}">
       <style>
-      body { font-family: "Helvetica Neue",Helvetica,Arial,sans-serif; }
+      body { font-family: "Helvetica Neue",Helvetica,Arial,sans-serif; margin: 20px; }
       </style>    
 
   </head>
   <body>
-      <a href="/upload">Upload</a>
-
-      <h1>ELISA Reports</h1>
+      <div style="padding-bottom: 10px"><strong>ELISA Reports: <a href="/">Home</a> | </strong><a href="/upload">Upload</a></div>
       
     {% for r in reports %}
         <div style="margin: 20px">
@@ -29,6 +28,7 @@
             <ul>
                 {% for m in r.metadata %}
                 {% if loop.first %}
+                <small>Report ID: {{r.dirname}}</small>
                 <h3>{{m.name}}</h3>
                 {% endif %}
                 <li>

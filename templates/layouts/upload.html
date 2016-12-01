@@ -12,16 +12,18 @@
     <link
         href="http://cdn.pydata.org/bokeh/release/bokeh-widgets-0.12.3.min.css"
         rel="stylesheet" type="text/css">
+     
+      <link rel=stylesheet type=text/css href="{{ url_for('static', filename='siimple.css') }}">
       
       <style>
-      body { font-family: "Helvetica Neue",Helvetica,Arial,sans-serif; }
+      body { font-family: "Helvetica Neue",Helvetica,Arial,sans-serif; margin: 20px; }
       input { display: block; }
       </style>    
 
   </head>
   <body>
       
-    <a href="/">Home</a>
+      <div style="padding-bottom: 10px"><strong>ELISA Reports: </strong><a href="/">Home</a></div>
 
     <h1>Upload csv files</h1>
     <form action="" method=post enctype=multipart/form-data>
