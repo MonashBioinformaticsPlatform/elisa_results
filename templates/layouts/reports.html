@@ -19,17 +19,20 @@
 
   </head>
   <body>
+      <a href="/upload">Upload</a>
 
       <h1>ELISA Reports</h1>
       
     {% for r in reports %}
         <div style="margin: 20px">
-            <h3>{{r.dirname}}</h3>
             
             <ul>
                 {% for m in r.metadata %}
+                {% if loop.first %}
+                <h3>{{m.name}}</h3>
+                {% endif %}
                 <li>
-                    <a href="/?plate_dir={{r.dirname}}&plate_file={{m.filename}}">{{m.filename}}</a>
+                    <a href="/view?plate_dir={{r.dirname}}&plate_file={{m.filename}}">{{m.filename}}</a>
                 </li>
                 {% endfor %}
             </ul>

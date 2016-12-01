@@ -359,7 +359,7 @@ def create_unique_dir(parent_dir):
     return full_dir
 
 
-@app.route("/")
+@app.route("/view")
 def polynomial():
     
     def get_well_num_from_table_select_num(num, rows, cols):
@@ -438,7 +438,7 @@ def polynomial():
     )
     return encode_utf8(html)
 
-@app.route("/index")
+@app.route("/")
 def index():
 
     html = flask.render_template(
@@ -448,7 +448,7 @@ def index():
     return encode_utf8(html)
 
 
-@app.route('/index/<dirname>')
+@app.route('/<dirname>')
 def index_dirname(dirname):
 
     html = flask.render_template(

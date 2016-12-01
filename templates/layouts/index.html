@@ -113,11 +113,13 @@
       
   </head>
   <body>
+      <a href="/">Home</a> | <a href="/upload">Upload</a> | <a href="/{{plate_dir}}">Report: {{md.name}}</a>
+      
       <h1>{{plate_dir}}: {{md.name}}</h1>
       <h2>Plate: {{md.filename}}</h2>
       
     <!-- Well exclude code -->
-    <form action="." method="GET">  
+    <form action="/view" method="GET">  
         <input type="hidden" name="plate_dir" value="{{plate_dir}}">
         <input type="hidden" name="plate_name" value="{{plate_file}}">
             <span>Click and drag to exclude wells (hold CTRL or CMD to select multiple).
