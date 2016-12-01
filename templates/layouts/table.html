@@ -21,6 +21,7 @@
       <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
       
       <style>
+      body { font-family: "Helvetica Neue",Helvetica,Arial,sans-serif; }
       #feedback { font-size: 1.4em; }
       #selectable .ui-selecting { background: #FECA40; }
       #selectable .ui-selected { background: #F39814; color: red; font-weight: bold }
@@ -31,29 +32,35 @@
       <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
       
       <script>
-        var getUrlParameter = function getUrlParameter(sParam) {
-            var sPageURL = decodeURIComponent(window.location.search.substring(1)),
-                sURLVariables = sPageURL.split('&'),
-                sParameterName,
-                i;
+        function parseURLParams(url) {
+            var queryStart = url.indexOf("?") + 1,
+                queryEnd   = url.indexOf("#") + 1 || url.length + 1,
+                query = url.slice(queryStart, queryEnd - 1),
+                pairs = query.replace(/\+/g, " ").split("&"),
+                parms = {}, i, n, v, nv;
 
-            for (i = 0; i < sURLVariables.length; i++) {
-                sParameterName = sURLVariables[i].split('=');
-
-                if (sParameterName[0] === sParam) {
-                    return sParameterName[1] === undefined ? true : sParameterName[1];
-                }
+            if (query === url || query === "") {
+                return;
             }
+
+            for (i = 0; i < pairs.length; i++) {
+                nv = pairs[i].split("=");
+                n = decodeURIComponent(nv[0]);
+                v = decodeURIComponent(nv[1]);
+
+                if (!parms.hasOwnProperty(n)) {
+                    parms[n] = [];
+                }
+
+                parms[n].push(nv.length === 2 ? v : null);
+            }
+            return parms;
         };          
       </script>
       
       <script>
-          var exclude = getUrlParameter('exclude');
-          
-          if(exclude)
-          {
-              exclude = exclude.split(",")
-          }
+          var url = window.location.href;
+          var exclude = parseURLParams(url)['exclude'];
           
             $.each(exclude, function( index, value ) {
               //alert(value);
@@ -99,7 +106,6 @@
 
   </head>
   <body>
-    <h1>Exclude Wells</h1>
 
     <p id="feedback">
     <span>Click and drag to exclude wells (hold CTRL or CMD to select multiple).
