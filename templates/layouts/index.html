@@ -79,7 +79,6 @@
           $( function() {
             $( "#selectable" ).selectable({
               stop: function() {
-                var result = $( "#select-result" ).empty();
                 var wrapper = $(".input_fields_wrap").empty();
                 $(wrapper).empty();
                 $( ".ui-selected", this ).each(function() {
@@ -100,7 +99,6 @@
 
                 if(found)
                 {
-                      var result = $( "#select-result" );
                       var wrapper = $(".input_fields_wrap");
                       var index = $( "#selectable li" ).index( this );
                       //result.append( ( index + "," ));
@@ -115,19 +113,18 @@
       
   </head>
   <body>
-      <h1>{{md.name}}</h1>
+      <h1>{{plate_dir}}: {{md.name}}</h1>
       <h2>Plate: {{md.filename}}</h2>
       
     <!-- Well exclude code -->
     <form action="." method="GET">  
         <input type="hidden" name="plate_dir" value="{{plate_dir}}">
         <input type="hidden" name="plate_name" value="{{plate_file}}">
-        <input style="margin-left: 750px" type="submit" value="Reload Graphs">
-        <div class="input_fields_wrap">
-        <p id="feedback">
-        <span>Click and drag to exclude wells (hold CTRL or CMD to select multiple).
-            <br/></span> <span id="select-result"></span>            
-            </p>
+            <span>Click and drag to exclude wells (hold CTRL or CMD to select multiple).
+            <br/>
+            <input style="margin-left: 750px" type="submit" value="Reload Graphs">
+            </span>        
+        <div class="input_fields_wrap">            
         </div>
     </form>
       

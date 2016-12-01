@@ -2,6 +2,9 @@ from __future__ import print_function
 
 import flask
 from flask import stream_with_context, request, Response
+from flask import request, redirect, url_for
+
+from werkzeug.utils import secure_filename
 
 import json
 
@@ -44,7 +47,7 @@ colors = {
 # get metadata from plate file csv
 def plate_metadata(plate_dir, plate_file):
     
-    with open(filename) as f:
+    with open('%s/%s' % (plate_dir,plate_file)) as f:
         content = f.readlines()
             
     string_metadata = ''.join(content[:4]).strip()
@@ -59,6 +62,8 @@ def write_csv_metadata(plate_dir,
                        coating_ab_units,
                        prot_units,
                        ab2_units,
+                       coating_ab_max,
+                       prot_max,
                        plate_files,
                        name):
     
@@ -66,14 +71,16 @@ def write_csv_metadata(plate_dir,
 
     # TODO write mean set (mean function)
 
-    output_file = '%s\%s' % (plate_dir,output_file)
+    output_file = '%s/%s' % (plate_dir,'metadata.csv')
 
     with open(output_file, 'w') as csvfile:
         fieldnames = ['filename',
                       'metadata',
                      'coating_ab',
+                     'coating_ab_max',
                      'coating_ab_units',
                      'prot',
+                     'prot_max',
                      'prot_units',
                      'ab2',
                      'ab2_units',
@@ -88,8 +95,10 @@ def write_csv_metadata(plate_dir,
             writer.writerow({'filename': plate_file,
                              'metadata': plate_metadata(plate_dir, plate_file),
                              'coating_ab': coating_ab,
+                             'coating_ab_max': coating_ab_max,
                              'coating_ab_units': coating_ab_units,
                              'prot': prot,
+                             'prot_max': prot_max,
                              'prot_units': prot_units,
                              'ab2': ab2,
                              'ab2_units': ab2_units,
@@ -97,7 +106,7 @@ def write_csv_metadata(plate_dir,
                             })
 
             
-def get_index(directory):
+def get_index(directory, dirname=None):
     
     index = []
     for x in os.walk('%s/' % directory):
@@ -111,9 +120,15 @@ def get_index(directory):
         if r['dirname'] == '':
             continue
         
+        # basic protection against invalid dirs
         r['metadata'] = read_plate_file_to_csv_metadata(path)        
         
-        index.append(r)
+        if r['metadata'] != []:
+            if dirname and \
+                r['dirname'] == dirname:
+                index.append(r)                    
+                break
+            index.append(r)
     
     return index
             
@@ -197,14 +212,14 @@ def get_well_attrs(mapped_plate, prot_concentration_high, coating_ab, ab2_step):
 
 def read_plate_to_df(plate_file_csv,
                     prot_concentration_high,
-                    coating_ab,
+                    coating_ab_max,
                     ab2_step=4):
 
     plate = read_plate_file_to_csv(plate_file_csv)
     mapped_plate = get_mapped_plate(plate)
     well_attr = get_well_attrs(mapped_plate,
                                prot_concentration_high,
-                               coating_ab,
+                               coating_ab_max,
                                ab2_step)
     df = pd.DataFrame(well_attr)
     return df
@@ -305,18 +320,34 @@ def read_plate_file_to_csv_metadata(plate_dir,
         return row.split('=')[1].split(' ')
     
     d = []
-    with open(metadata_file) as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            if plate_filename:
-                if plate_filename == \
-                    row['filename']:
-                        d.append(row)
-                        break
-            else:
-                d.append(row)
+    
+    try:
+    
+        with open(metadata_file) as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                if plate_filename:
+                    if plate_filename == \
+                        row['filename']:
+                            d.append(row)
+                            break
+                else:
+                    d.append(row)
+    except IOError:
+        return []
 
     return d
+
+
+def create_unique_dir(parent_dir):
+    import uuid 
+    unique_dir = uuid.uuid4().hex[:6].upper()
+    
+    full_dir = '%s/%s' % (parent_dir, unique_dir)
+    os.makedirs(full_dir)
+    
+    return full_dir
+
 
 @app.route("/")
 def polynomial():
@@ -327,14 +358,6 @@ def polynomial():
         numwise = (col_val*rows)+row_val
         numwise = numwise+1 # human readable well
         return numwise
-
-    prot_concentration_high = request.args.get('prot_conc',
-                                               default=2.0,
-                                               type=float)
-    
-    coating_ab = request.args.get('coating_ab',
-                                               default=4.0,
-                                               type=float)
     
     excl = request.args.getlist('exclude')
     
@@ -349,12 +372,19 @@ def polynomial():
 
     plate_file = '%s/%s' % (plate_dir, plate_filename)
         
+    md = read_plate_file_to_csv_metadata(plate_dir,
+                                         plate_filename)
+    
+    prot_concentration_high = float(md[0]['prot_max'])
+
+    coating_ab_max = float(md[0]['coating_ab_max'])  
+        
     rows = 8.0
     cols = 12.0
     
     df = read_plate_to_df(plate_file,
                      prot_concentration_high,
-                     coating_ab)
+                     coating_ab_max)
 
     csv_list = read_plate_file_to_csv(plate_file)
     max_value = int(df['value'].max())
@@ -377,9 +407,6 @@ def polynomial():
                 plots.append(p)
     
     script, div = components(plots)
-
-    md = read_plate_file_to_csv_metadata(plate_dir,
-                                         plate_filename)
     
     
     html = flask.render_template(
@@ -396,13 +423,79 @@ def polynomial():
 @app.route("/index")
 def index():
 
-    
     html = flask.render_template(
         'layouts/reports.html',
         reports=get_index(APP_DATA)
     )
     return encode_utf8(html)
 
+
+@app.route('/index/<dirname>')
+def index_dirname(dirname):
+
+    html = flask.render_template(
+        'layouts/reports.html',
+        reports=get_index(APP_DATA,dirname)
+    )
+    return encode_utf8(html)
+
+
+ALLOWED_EXTENSIONS = set(['csv', 'CSV'])
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
+
+@app.route('/upload', methods=['GET', 'POST'])
+def upload_file():
+    if request.method == 'POST':
+
+        files = flask.request.files.getlist("file")
+        # if user does not select file, browser also
+        # submit a empty part without filename
+        
+        save_dir = create_unique_dir(APP_DATA)
+        
+        filenames = []
+        for file in files:
+            if file.filename == '':
+                flash('No selected file')
+                return redirect(request.url)
+
+            if file and allowed_file(file.filename):
+
+                filename = secure_filename(file.filename)
+                file.save(os.path.join(save_dir, filename))
+                filenames.append(filename)
+        
+        write_csv_metadata(save_dir,
+                       'coaty',
+                       'myprot',
+                       'ab2',
+                       'ABC',
+                       'IJK',
+                       'XYZ',
+                       float(4),
+                       float(2),
+                       filenames,
+                       'steve report test')
+        
+        return redirect(url_for('upload_file'))
+
+#def write_csv_metadata(plate_dir,
+#                       coating_ab,
+#                       prot,
+#                       ab2,
+#                       coating_ab_units,
+#                       prot_units,
+#                       ab2_units,
+#                       plate_files,
+#                       name):    
+    
+    html = flask.render_template(
+        'layouts/upload.html',
+    )
+    return encode_utf8(html)
 
 if __name__ == "__main__":
     print(__doc__)
