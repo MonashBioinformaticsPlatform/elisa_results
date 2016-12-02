@@ -123,12 +123,17 @@ def get_index(directory, dirname=None):
         # basic protection against invalid dirs
         r['metadata'] = read_plate_file_to_csv_metadata(path)        
         
-        if r['metadata'] != []:
+        # this logic sucks
+        found = False
+        if r['metadata'] != [] and found == False:
             if dirname and \
                 r['dirname'] == dirname:
-                index.append(r)                    
-                break
+                found = True
+                index.append(r)
+        
+        if not dirname:
             index.append(r)
+                
     
     return index
             
