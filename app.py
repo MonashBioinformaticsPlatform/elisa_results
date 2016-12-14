@@ -169,24 +169,24 @@ def get_mapped_plate(plate, filename='data/elisawells.csv',
     with open(filename, 'rb') as f:
         reader = csv.reader(f)
         col_count_list = list()
-
+        
         for row in reader:
             row_value = int(row[0])
             ab2_value = float(row[1])
     
-            well_pos = row_value
+            well_pos = row_value-1
             well_col = abs(well_pos/rows)
-            well_row = abs(well_pos%rows)-1
-            
+            well_row = abs(well_pos%rows)
+
             mapped_plate.append((row_value, ab2_value, plate[well_row][well_col]))
-            
+
     return mapped_plate
 
 
 def get_prot_concentration_step(p_high):
     p = p_high
 
-    return [0, p/8.0, p/4.0, p/2.0, p]
+    return [0, p/16.0, p/8.0, p/4.0, p/2.0, p]
 
 def get_coating_ab_step(a_high):
     p = a_high
@@ -226,6 +226,7 @@ def read_plate_to_df(plate_file_csv,
                                prot_concentration_high,
                                coating_ab_max,
                                ab2_step)
+
     df = pd.DataFrame(well_attr)
     return df
 
@@ -367,18 +368,47 @@ def create_unique_dir(parent_dir):
 @app.route("/view")
 def polynomial():
     
-    def get_well_num_from_table_select_num(num, rows, cols):
+    rows = 8.0
+    cols = 12.0
+    
+    # todo fix default (aggregate pandas issue)
+    def get_well_num_from_table_select_num(num, rows=rows, cols=cols):
         row_val = int((num)/cols)
         col_val = int(num%cols)
         numwise = (col_val*rows)+row_val
         numwise = numwise+1 # human readable well
         return numwise
     
+    # reverse for well display on page..
+    def get_well_num_from_table_select_num_rev(num, rows=cols, cols=rows):
+        row_val = int((num)/cols)
+        col_val = int(num%cols)
+        numwise = (col_val*rows)+row_val
+        
+        # THIS PART IS DIFFERENT
+        numwise = numwise # human readable well
+        return numwise    
+
+    # get well references
+    def get_well_references(well_num, cols=cols):
+
+        well_num = int(well_num)
+        cols = int(cols)
+        letters = 'ABCDEFGH'
+        well_refs = list()
+
+        for i in letters:
+            for j in range(1, cols+1):
+                well_refs.append('%s%s' % (i,j))
+
+        print('%s %s' % (well_num, well_refs[well_num]))
+        return well_refs[well_num]
+    
     excl = request.args.getlist('exclude')
     
-    plate_filename = request.args.get('plate_file', default='161102-001.CSV')
+    plate_filename = request.args.get('plate_file')
     
-    plate_dir = request.args.get('plate_dir', default='example')
+    plate_dir = request.args.get('plate_dir')
     plate_dirname = plate_dir
     plate_dir = plate_dir.replace('\\','').replace('/','')
 
@@ -393,9 +423,6 @@ def polynomial():
     prot_concentration_high = float(md[0]['prot_max'])
 
     coating_ab_max = float(md[0]['coating_ab_max'])  
-        
-    rows = 8.0
-    cols = 12.0
     
     df = read_plate_to_df(plate_file,
                      prot_concentration_high,
@@ -406,6 +433,27 @@ def polynomial():
     
     # exclude
     df.loc[:,'exclude'] = pd.Series(False, index=df.index)
+    
+    #  well dataframe display
+    df['orig_index'] = df.index
+    df_well = df.sort(['well'], ascending=[1])
+    rowwise = (df_well['well'] - 1).apply(get_well_num_from_table_select_num_rev)
+    rowwise = rowwise.rename('well_rowwise')
+    df_rowwise = pd.concat([df_well, rowwise], axis=1)
+    df_rowwise = df_rowwise.sort(['well_rowwise'], ascending=[1])
+    
+    #  add well ref
+    row_well_ref = (df_rowwise['well_rowwise']).apply(get_well_references)
+    row_well_ref = row_well_ref.rename('well_ref')
+    df_rowwise = pd.concat([df_rowwise, row_well_ref], axis=1)
+    
+    # to pass through to plate (rowwise)
+    # reset index, then transform, to dict
+    t_df = df_rowwise.reset_index(drop=True)
+    wells = t_df.T.to_dict().values()
+    
+    # reset for graph
+    df = df_rowwise.sort(['orig_index'], ascending=[1])
     
     for e in excl:
         e = int(e)
@@ -430,12 +478,12 @@ def polynomial():
                 plots.append(p)
     
     script, div = components(plots)
-    
+
     
     html = flask.render_template(
         'layouts/index.html',
         plot_script=script, plot_div=div,
-        wells=csv_list,
+        wells=wells,
         max_value=max_value,
         md=md[0],
         plate_file=plate_filename,
@@ -523,4 +571,4 @@ def upload_file():
 if __name__ == "__main__":
     print(__doc__)
     #app.run()
-    app.run(host='0.0.0.0', port=5919)
+    app.run(host='0.0.0.0', port=5918)

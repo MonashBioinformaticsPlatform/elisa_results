@@ -26,11 +26,12 @@
       
       <style>
       body { font-family: "Helvetica Neue",Helvetica,Arial,sans-serif; margin: 20px; }
+          
       #feedback { font-size: 0.8em; margin-left: 5px; }
       #selectable .ui-selecting { background: #FECA40; }
       #selectable .ui-selected { background: #F39814; color: red; font-weight: bold }
       #selectable { list-style-type: none; margin: 0; padding: 0; width: 850px; }
-      #selectable li { margin: 3px; padding: 12px 1px 1px 1px; float: left; width: 60px; height: 35px; font-size: 1.2em; text-align: center; }
+      #selectable li { line-height: 1.3em; margin: 3px; padding: 7px 1px 1px 1px; float: left; width: 60px; height: 45px; font-size: 1.0em; text-align: center; }
       </style>
       <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
       <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
@@ -135,10 +136,10 @@
       
     <ol id="selectable">
     <!-- woo! insane colour 'heat map' calculations -->
-    {% for r in wells %}
-        {% for n in r %}
-          <li style="background-color: rgb(245, 255, {{ 245-((n|int/max_value)*200)|int }})" class="ui-state-default">{{n}}</li>
-        {% endfor %}
+    {% for n in wells %}      
+          <li style="word-wrap: break-word; background-color: rgb(245, 255, {{ 245-((n.value|int/max_value)*200)|int }})" class="ui-state-default">
+              {{n.value|int}} ({{n.well_ref}})
+          </li>
     {% endfor %}
     </ol>  
       
