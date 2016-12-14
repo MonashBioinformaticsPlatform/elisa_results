@@ -131,9 +131,8 @@
       <h1>{{md.name}} > {{md.filename}}</h1>
       
     <!-- Well exclude code -->
-    <form action="/view" method="GET">  
-        <input type="hidden" name="plate_dir" value="{{plate_dir}}">
-        <input type="hidden" name="plate_file" value="{{plate_file}}">
+    <form action="/view?plate_dir={{plate_dir}}&plate_file={{plate_file}}" method="POST">  
+        <input type="hidden" name="submit" value="true">
             <span>Click and drag to exclude wells (hold CTRL or CMD to select multiple).
             <br/>
             <input style="margin-left: 620px" id="reset" type="button" value="Reset Selection"> <input type="submit" value="Reload Graphs">
@@ -145,7 +144,7 @@
     <ol id="selectable">
     <!-- woo! insane colour 'heat map' calculations -->
     {% for n in wells %}      
-          <li style="word-wrap: break-word; background-color: rgb(245, 255, {{ 245-((n.value|int/max_value)*200)|int }})" class="ui-state-default">
+          <li style="word-wrap: break-word; background-color: rgb(245, 255, {{ 245-((n.value|int/max_value)*200)|int }})" class="ui-state-default {% if n.exclude %}ui-selected{% endif %}">
               {{n.value|int}} ({{n.well_ref}})
           </li>
     {% endfor %}

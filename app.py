@@ -105,6 +105,43 @@ def write_csv_metadata(plate_dir,
                              'name': name,
                             })
 
+# write exclusions to csv
+def write_csv_exclude(plate_file,
+                      exclude_list):
+
+    output_file = '%s.exc' % plate_file
+
+    with open(output_file, 'w') as csvfile:
+        fieldnames = ['exclude']
+
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+
+        writer.writeheader()
+        
+        for exclude in exclude_list:
+            # todo sort out the fact the ab/prot names are repeated
+            writer.writerow({'exclude': exclude,
+                            })
+            
+
+# from plate array to mapped plate array
+def get_csv_exclude(plate_file):
+    import csv, sys
+       
+    exclude = list()
+       
+    with open(plate_file, 'rb') as f:
+        reader = csv.reader(f)
+        reader.next()
+        col_count_list = list()
+        
+        for row in reader:
+            row_value = int(row[0])
+
+            exclude.append(row_value)
+
+    return exclude
+            
             
 def get_index(directory, dirname=None):
     
@@ -365,7 +402,7 @@ def create_unique_dir(parent_dir):
     return full_dir
 
 
-@app.route("/view")
+@app.route("/view", methods=['GET', 'POST'])
 def polynomial():
     
     rows = 8.0
@@ -401,10 +438,11 @@ def polynomial():
             for j in range(1, cols+1):
                 well_refs.append('%s%s' % (i,j))
 
-        print('%s %s' % (well_num, well_refs[well_num]))
+        
         return well_refs[well_num]
     
-    excl = request.args.getlist('exclude')
+    excl = request.form.getlist('exclude')
+    submit = request.form.get('submit')
     
     plate_filename = request.args.get('plate_file')
     
@@ -431,9 +469,6 @@ def polynomial():
     csv_list = read_plate_file_to_csv(plate_file)
     max_value = int(df['value'].max())
     
-    # exclude
-    df.loc[:,'exclude'] = pd.Series(False, index=df.index)
-    
     #  well dataframe display
     df['orig_index'] = df.index
     df_well = df.sort(['well'], ascending=[1])
@@ -447,19 +482,27 @@ def polynomial():
     row_well_ref = row_well_ref.rename('well_ref')
     df_rowwise = pd.concat([df_rowwise, row_well_ref], axis=1)
     
-    # to pass through to plate (rowwise)
-    # reset index, then transform, to dict
-    t_df = df_rowwise.reset_index(drop=True)
-    wells = t_df.T.to_dict().values()
-    
     # reset for graph
     df = df_rowwise.sort(['orig_index'], ascending=[1])
+    
+    if submit == 'true':
+        write_csv_exclude(plate_file, excl)
+    else:
+        excl = get_csv_exclude('%s.exc' % plate_file)
+    
+    # exclude
+    df.loc[:,'exclude'] = pd.Series(False, index=df.index)
     
     for e in excl:
         e = int(e)
         e_well = get_well_num_from_table_select_num(e, rows, cols)
         df.loc[df.well == e_well,('exclude')] = True
-    
+        
+    # to pass through to plate (rowwise)
+    # reset index, then transform, to dict
+    df_rowwise = df.sort(['well_rowwise'], ascending=[1])
+    t_df = df_rowwise.reset_index(drop=True)
+    wells = t_df.T.to_dict().values()
 
     plots = list()
     for prot_conc in df.sort_values('prot').prot.unique():
@@ -478,7 +521,6 @@ def polynomial():
                 plots.append(p)
     
     script, div = components(plots)
-
     
     html = flask.render_template(
         'layouts/index.html',
