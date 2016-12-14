@@ -130,7 +130,9 @@ def get_csv_exclude(plate_file):
        
     exclude = list()
        
-    with open(plate_file, 'rb') as f:
+    try:
+        f = open(plate_file, 'rb')
+        
         reader = csv.reader(f)
         reader.next()
         col_count_list = list()
@@ -140,6 +142,13 @@ def get_csv_exclude(plate_file):
 
             exclude.append(row_value)
 
+    except IOError as err:
+        print("IO error: {0}".format(err))
+        plate_file = plate_file.rsplit('.',1)[0]
+        write_csv_exclude(plate_file, list())
+    else:
+        f.close()
+            
     return exclude
             
             
