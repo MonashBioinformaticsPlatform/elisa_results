@@ -94,6 +94,14 @@
               }
             });
           } );
+            
+        $(function() {
+              $("#reset").click( function()
+                   {
+                     $('#selectable').find('li').removeClass('ui-selected');
+                   }
+              );
+        });
           
           
         $(function() {
@@ -128,7 +136,7 @@
         <input type="hidden" name="plate_file" value="{{plate_file}}">
             <span>Click and drag to exclude wells (hold CTRL or CMD to select multiple).
             <br/>
-            <input style="margin-left: 750px" type="submit" value="Reload Graphs">
+            <input style="margin-left: 620px" id="reset" type="button" value="Reset Selection"> <input type="submit" value="Reload Graphs">
             </span>        
         <div class="input_fields_wrap">            
         </div>
