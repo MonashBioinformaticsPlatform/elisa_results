@@ -131,10 +131,10 @@ def get_csv_exclude(plate_file):
     exclude = list()
        
     try:
-        f = open(plate_file, 'rb')
+        f = open(plate_file, 'rt')
         
         reader = csv.reader(f)
-        reader.next()
+        reader.__next__()
         col_count_list = list()
         
         for row in reader:
@@ -203,7 +203,8 @@ def read_plate_file_to_csv(filename):
 
 
 # from plate array to mapped plate array
-def get_mapped_plate(plate, filename='data/elisawells.csv',
+def get_mapped_plate(plate, filename='%s/%s' %\
+                     (APP_ROOT, 'data/elisawells.csv'),
                  rows=8, cols=12):
     import csv, sys
     
@@ -212,7 +213,7 @@ def get_mapped_plate(plate, filename='data/elisawells.csv',
     
     mapped_plate = list()
        
-    with open(filename, 'rb') as f:
+    with open(filename, 'rt') as f:
         reader = csv.reader(f)
         col_count_list = list()
         
@@ -221,8 +222,8 @@ def get_mapped_plate(plate, filename='data/elisawells.csv',
             ab2_value = float(row[1])
     
             well_pos = row_value-1
-            well_col = abs(well_pos/rows)
-            well_row = abs(well_pos%rows)
+            well_col = int(abs(well_pos/rows))
+            well_row = int(abs(well_pos%rows))
 
             mapped_plate.append((row_value, ab2_value, plate[well_row][well_col]))
 
@@ -411,19 +412,13 @@ def create_unique_dir(parent_dir):
     return full_dir
 
 
-@app.route("/view", methods=['GET', 'POST'])
-def polynomial():
+def process_plate_to_df(plate_file,
+                    prot_concentration_high,
+                    coating_ab_max):
     
     rows = 8.0
     cols = 12.0
-    
-    # todo fix default (aggregate pandas issue)
-    def get_well_num_from_table_select_num(num, rows=rows, cols=cols):
-        row_val = int((num)/cols)
-        col_val = int(num%cols)
-        numwise = (col_val*rows)+row_val
-        numwise = numwise+1 # human readable well
-        return numwise
+
     
     # reverse for well display on page..
     def get_well_num_from_table_select_num_rev(num, rows=cols, cols=rows):
@@ -450,33 +445,9 @@ def polynomial():
         
         return well_refs[well_num]
     
-    excl = request.form.getlist('exclude')
-    submit = request.form.get('submit')
-    
-    plate_filename = request.args.get('plate_file')
-    
-    plate_dir = request.args.get('plate_dir')
-    plate_dirname = plate_dir
-    plate_dir = plate_dir.replace('\\','').replace('/','')
-
-    if plate_dir:
-        plate_dir = '%s/%s' % (APP_DATA, plate_dir)
-
-    plate_file = '%s/%s' % (plate_dir, plate_filename)
-        
-    md = read_plate_file_to_csv_metadata(plate_dir,
-                                         plate_filename)
-    
-    prot_concentration_high = float(md[0]['prot_max'])
-
-    coating_ab_max = float(md[0]['coating_ab_max'])  
-    
     df = read_plate_to_df(plate_file,
-                     prot_concentration_high,
-                     coating_ab_max)
-
-    csv_list = read_plate_file_to_csv(plate_file)
-    max_value = int(df['value'].max())
+                         prot_concentration_high,
+                         coating_ab_max)
     
     #  well dataframe display
     df['orig_index'] = df.index
@@ -494,10 +465,29 @@ def polynomial():
     # reset for graph
     df = df_rowwise.sort(['orig_index'], ascending=[1])
     
-    if submit == 'true':
-        write_csv_exclude(plate_file, excl)
-    else:
-        excl = get_csv_exclude('%s.exc' % plate_file)
+    return df
+
+
+def get_wells_dict_for_template(df):
+
+    df_rowwise = df.sort(['well_rowwise'], ascending=[1])
+    t_df = df_rowwise.reset_index(drop=True)
+    wells = t_df.T.to_dict().values()
+
+    return wells
+
+
+def process_exclusions(df, excl, nan=False):
+    # todo fix default (aggregate pandas issue)
+    rows = 8.0
+    cols = 12.0
+
+    def get_well_num_from_table_select_num(num, rows=rows, cols=cols):
+        row_val = int((num)/cols)
+        col_val = int(num%cols)
+        numwise = (col_val*rows)+row_val
+        numwise = numwise+1 # human readable well
+        return numwise
     
     # exclude
     df.loc[:,'exclude'] = pd.Series(False, index=df.index)
@@ -506,12 +496,77 @@ def polynomial():
         e = int(e)
         e_well = get_well_num_from_table_select_num(e, rows, cols)
         df.loc[df.well == e_well,('exclude')] = True
+        if nan:
+            df.loc[df.well == e_well,('value')] = np.nan
+        
+    return df
+
+
+def get_mean_df_from_dir(APP_DATA, dirname):
+    
+    dir_md = get_index(APP_DATA,dirname)
+    
+    plate_dir = dir_md[0]['dir']
+    
+    mean_df = pd.DataFrame()
+    # for transposing of mean onto structured dataset for plot
+    transpose_df = None
+
+    i = 0
+    for plate_file in dir_md[0]['metadata']:
+        full_filepath = '%s/%s' % (plate_dir, plate_file['filename'])
+        #print(full_filepath)
+
+        df = process_plate_to_df(full_filepath, 1.0, 4.0)
+
+        excl = list()
+        excl = get_csv_exclude('%s.exc' % full_filepath)
+
+        df = process_exclusions(df, excl, nan=True)
+
+        transpose_df = df
+
+        mean_df['value_%s' % i] = df['value']
+        mean_df['exclude_%s' % i] = df['exclude']
+        i = i + 1
+
+    transpose_df['value'] = mean_df[['value_0','value_1', 'value_2']].mean(axis=1)
+    
+    # make sure all 3 plates excluded = NaN mean value
+    transpose_df.loc[:,'exclude'] = pd.Series(False, index=df.index)
+    transpose_df['exclude'] = transpose_df['value'].isnull()
+    return transpose_df
+
+
+@app.route("/mean", methods=['GET'])
+def mean():
+    
+    # FORM VARS
+    excl = list()
+    
+    plate_dir = request.args.get('plate_dir')
+    plate_dirname = plate_dir
+    plate_dir = plate_dir.replace('\\','').replace('/','')
+
+    plate_filename = get_index(APP_DATA, plate_dir)[0]['metadata'][0]['filename']
+    
+    dirname = plate_dir
+    plate_dir = get_index(APP_DATA, plate_dir)[0]['dir']
+    
+    # get plate 1 to grab universal values for the 3 plates
+    md = read_plate_file_to_csv_metadata(plate_dir,
+                                         plate_filename)
+    
+    prot_concentration_high = float(md[0]['prot_max'])
+    coating_ab_max = float(md[0]['coating_ab_max'])  
+    
+    df = get_mean_df_from_dir(APP_DATA, dirname)
+
+    max_value = int(df['value'].max())
         
     # to pass through to plate (rowwise)
     # reset index, then transform, to dict
-    df_rowwise = df.sort(['well_rowwise'], ascending=[1])
-    t_df = df_rowwise.reset_index(drop=True)
-    wells = t_df.T.to_dict().values()
+    wells = get_wells_dict_for_template(df)
 
     plots = list()
     for prot_conc in df.sort_values('prot').prot.unique():
@@ -538,7 +593,85 @@ def polynomial():
         max_value=max_value,
         md=md[0],
         plate_file=plate_filename,
-        plate_dir=plate_dirname
+        plate_dir=plate_dirname,
+        mean=True,
+    )
+    return encode_utf8(html)
+
+
+@app.route("/view", methods=['GET', 'POST'])
+def view():
+    
+    # FORM VARS
+    excl = request.form.getlist('exclude')
+    submit = request.form.get('submit')
+    
+    plate_filename = request.args.get('plate_file')
+    
+    plate_dir = request.args.get('plate_dir')
+    plate_dirname = plate_dir
+    plate_dir = plate_dir.replace('\\','').replace('/','')
+
+    if plate_dir:
+        plate_dir = '%s/%s' % (APP_DATA, plate_dir)
+
+    plate_file = '%s/%s' % (plate_dir, plate_filename)
+    
+    # METADATA.csv
+    
+    md = read_plate_file_to_csv_metadata(plate_dir,
+                                         plate_filename)
+    
+    prot_concentration_high = float(md[0]['prot_max'])
+    coating_ab_max = float(md[0]['coating_ab_max'])  
+    
+    # DF PROCESSING 
+    df = process_plate_to_df(plate_file,
+                    prot_concentration_high,
+                    coating_ab_max)
+
+    max_value = int(df['value'].max())
+    
+
+    # EXCLUSIONS
+    if submit == 'true':
+        write_csv_exclude(plate_file, excl)
+    else:
+        excl = get_csv_exclude('%s.exc' % plate_file)
+    
+    df = process_exclusions(df, excl)
+    
+    # to pass through to plate (rowwise)
+    # reset index, then transform, to dict
+    wells = get_wells_dict_for_template(df)
+
+    plots = list()
+    for prot_conc in df.sort_values('prot').prot.unique():
+        
+        if not df.empty:
+            p = get_plot_for_prot(df[(df.exclude == False)],
+                                  md[0]['coating_ab'],
+                                  md[0]['prot'],
+                                  md[0]['ab2'],
+                                  md[0]['coating_ab_units'],
+                                  md[0]['prot_units'],
+                                  md[0]['ab2_units'],
+                                  prot_conc,
+                                  md[0]['name'])
+            if p:
+                plots.append(p)
+    
+    script, div = components(plots)
+    
+    html = flask.render_template(
+        'layouts/index.html',
+        plot_script=script, plot_div=div,
+        wells=wells,
+        max_value=max_value,
+        md=md[0],
+        plate_file=plate_filename,
+        plate_dir=plate_dirname,
+        mean=False,
     )
     return encode_utf8(html)
 

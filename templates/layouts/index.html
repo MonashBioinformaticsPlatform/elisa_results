@@ -78,6 +78,7 @@
               //alert(value);
             });
           
+          {% if not mean %}
           
           $( function() {
             $( "#selectable" ).selectable({
@@ -102,6 +103,8 @@
                    }
               );
         });
+           
+        {% endif %}
           
           
         $(function() {
@@ -128,8 +131,9 @@
         
       <br/>
       <small>Report ID: {{plate_dir}}</small>
-      <h1>{{md.name}} > {{md.filename}}</h1>
+      <h1>{{md.name}} > {% if mean %}Calculated Mean{% else %}{{md.filename}}{% endif %}</h1>
       
+    {% if not mean %}
     <!-- Well exclude code -->
     <form action="/view?plate_dir={{plate_dir}}&plate_file={{plate_file}}" method="POST">  
         <input type="hidden" name="submit" value="true">
@@ -140,6 +144,12 @@
         <div class="input_fields_wrap">            
         </div>
     </form>
+   {% else %}
+      
+      <span>Calculated Mean Values of each well. (Highlighted red values = Wells excluded from ALL plates).</span>
+      
+   {% endif %}
+    
       
     <ol id="selectable">
     <!-- woo! insane colour 'heat map' calculations -->

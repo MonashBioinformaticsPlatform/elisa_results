@@ -34,6 +34,11 @@
                 <li>
                     <a href="/view?plate_dir={{r.dirname}}&plate_file={{m.filename}}">{{m.filename}}</a>
                 </li>
+                {% if loop.last %}
+                 <li>
+                    <a href="/mean?plate_dir={{r.dirname}}">Calculated Mean</a>
+                </li>               
+                {% endif %}
                 {% endfor %}
             </ul>
             <br/>
