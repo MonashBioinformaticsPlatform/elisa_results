@@ -20,7 +20,7 @@
 
   </head>
   <body>
-      <div style="padding-bottom: 10px"><strong>ELISA Reports: <a href="/">Home</a> | </strong><a href="/upload">Upload</a></div>
+      <div style="padding-bottom: 10px"><strong>ELISA Reports: <a href=".">Home</a> | </strong><a href="upload">Upload</a></div>
       
     {% for r in reports %}
         <div style="margin: 20px">
@@ -32,11 +32,11 @@
                 <h3>{{m.name}}</h3>
                 {% endif %}
                 <li>
-                    <a href="/view?plate_dir={{r.dirname}}&plate_file={{m.filename}}">{{m.filename}}</a>
+                    <a href="view?plate_dir={{r.dirname}}&plate_file={{m.filename}}">{{m.filename}}</a>
                 </li>
                 {% if loop.last %}
                  <li>
-                    <a href="/mean?plate_dir={{r.dirname}}">Calculated Mean</a>
+                    <a href="mean?plate_dir={{r.dirname}}">Calculated Mean</a>
                 </li>               
                 {% endif %}
                 {% endfor %}

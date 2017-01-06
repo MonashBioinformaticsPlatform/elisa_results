@@ -127,7 +127,7 @@
       
   </head>
   <body>
-      <div style="padding-bottom: 10px"><strong>ELISA Reports: </strong><a href="/">Home</a> | <a href="/upload">Upload</a> | <a href="/{{plate_dir}}">{{md.name}}</a></div>
+      <div style="padding-bottom: 10px"><strong>ELISA Reports: </strong><a href="./">Home</a> | <a href="./upload">Upload</a> | <a href="./{{plate_dir}}">{{md.name}}</a></div>
         
       <br/>
       <small>Report ID: {{plate_dir}}</small>
@@ -135,7 +135,7 @@
       
     {% if not mean %}
     <!-- Well exclude code -->
-    <form action="/view?plate_dir={{plate_dir}}&plate_file={{plate_file}}" method="POST">  
+    <form action="./view?plate_dir={{plate_dir}}&plate_file={{plate_file}}" method="POST">  
         <input type="hidden" name="submit" value="true">
             <span>Click and drag to exclude wells (hold CTRL or CMD to select multiple).
             <br/>
