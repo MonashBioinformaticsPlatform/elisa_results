@@ -134,7 +134,7 @@ def get_csv_exclude(plate_file):
         f = open(plate_file, 'rt')
         
         reader = csv.reader(f)
-        reader.__next__()
+        reader.next()
         col_count_list = list()
         
         for row in reader:
@@ -354,6 +354,7 @@ def get_plot_for_prot(df,
 
         hover = p.select(dict(type=HoverTool))
         hover.tooltips = OrderedDict([('Well', '@well'),
+                                      ('Ref', '@well_ref'),
                                       ('Absorbance', '@value'),
                                       (coating_name, '@coating_ab')]) 
         
@@ -755,4 +756,4 @@ def upload_file():
 if __name__ == "__main__":
     print(__doc__)
     #app.run()
-    app.run(host='0.0.0.0', port=5919)
+    app.run(host='0.0.0.0', port=5918)

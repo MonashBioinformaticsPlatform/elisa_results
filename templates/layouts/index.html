@@ -27,11 +27,11 @@
       <style>
       body { font-family: "Helvetica Neue",Helvetica,Arial,sans-serif; margin: 20px; }
           
-      #feedback { font-size: 0.8em; margin-left: 5px; }
+      #feedback { font-size: 0.8em; margin-left: 4px; }
       #selectable .ui-selecting { background: #FECA40; }
       #selectable .ui-selected { background: #F39814; color: red; font-weight: bold }
-      #selectable { list-style-type: none; margin: 0; padding: 0; width: 850px; }
-      #selectable li { line-height: 1.3em; margin: 3px; padding: 7px 1px 1px 1px; float: left; width: 60px; height: 45px; font-size: 1.0em; text-align: center; }
+      #selectable { list-style-type: none; margin: 0; padding: 0; width: 1100px; }
+      #selectable li { line-height: 1.3em; margin: 1px; padding: 7px 1px 1px 1px; float: left; width: 83px; height: 27px; font-size: 0.9em; text-align: center; }
       </style>
       <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
       <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
@@ -139,7 +139,7 @@
         <input type="hidden" name="submit" value="true">
             <span>Click and drag to exclude wells (hold CTRL or CMD to select multiple).
             <br/>
-            <input style="margin-left: 620px" id="reset" type="button" value="Reset Selection"> <input type="submit" value="Reload Graphs">
+            <input style="margin-left: 820px" id="reset" type="button" value="Reset Selection"> <input type="submit" value="Reload Graphs">
             </span>        
         <div class="input_fields_wrap">            
         </div>
@@ -160,7 +160,7 @@
     {% endfor %}
     </ol>  
       
-    <div class="spacer" style="height: 500px;"></div>
+    <div class="spacer" style="height: 350px;"></div>
     
     <!-- A simple form for changing the graph -->
     {% for p in plot_div %}
