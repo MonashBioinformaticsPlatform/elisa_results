@@ -87,3 +87,8 @@ ENV/
 
 # Rope project settings
 .ropeproject
+
+# ELISA
+data/*
+!data/example
+data/example/*.exc
