@@ -64,6 +64,7 @@ def write_csv_metadata(plate_dir,
                        ab2_units,
                        coating_ab_max,
                        prot_max,
+                       ab2_max,
                        plate_files,
                        name):
     
@@ -84,6 +85,7 @@ def write_csv_metadata(plate_dir,
                      'prot_units',
                      'ab2',
                      'ab2_units',
+                     'ab2_max',
                      'name']
 
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
@@ -102,6 +104,7 @@ def write_csv_metadata(plate_dir,
                              'prot_units': prot_units,
                              'ab2': ab2,
                              'ab2_units': ab2_units,
+                             'ab2_max': ab2_max,
                              'name': name,
                             })
 
@@ -233,7 +236,8 @@ def get_mapped_plate(plate, filename='%s/%s' %\
 def get_prot_concentration_step(p_high):
     p = p_high
 
-    return [0, p/16.0, p/8.0, p/4.0, p/2.0, p]
+    # the -1 is for the final 2 columns that are excluded
+    return [0, p/8.0, p/4.0, p/2.0, p, p*-1]
 
 def get_coating_ab_step(a_high):
     p = a_high
@@ -241,7 +245,8 @@ def get_coating_ab_step(a_high):
     return [p/8.0, p/4.0, p/2.0, p]
 
 
-def get_well_attrs(mapped_plate, prot_concentration_high, coating_ab, ab2_step):
+def get_well_attrs(mapped_plate, prot_concentration_high, coating_ab,
+                   ab2_max, ab2_step):
     prot_step = get_prot_concentration_step(prot_concentration_high)
     coating_step = get_coating_ab_step(coating_ab)
 
@@ -265,6 +270,7 @@ def get_well_attrs(mapped_plate, prot_concentration_high, coating_ab, ab2_step):
 def read_plate_to_df(plate_file_csv,
                     prot_concentration_high,
                     coating_ab_max,
+                    ab2_max,
                     ab2_step=4):
 
     plate = read_plate_file_to_csv(plate_file_csv)
@@ -272,7 +278,9 @@ def read_plate_to_df(plate_file_csv,
     well_attr = get_well_attrs(mapped_plate,
                                prot_concentration_high,
                                coating_ab_max,
-                               ab2_step)
+                               ab2_max,
+                               ab2_step
+                               )
 
     df = pd.DataFrame(well_attr)
     return df
@@ -415,7 +423,8 @@ def create_unique_dir(parent_dir):
 
 def process_plate_to_df(plate_file,
                     prot_concentration_high,
-                    coating_ab_max):
+                    coating_ab_max,
+                    ab2_max=2):
     
     rows = 8.0
     cols = 12.0
@@ -448,7 +457,8 @@ def process_plate_to_df(plate_file,
     
     df = read_plate_to_df(plate_file,
                          prot_concentration_high,
-                         coating_ab_max)
+                         coating_ab_max,
+                         ab2_max)
     
     #  well dataframe display
     df['orig_index'] = df.index
@@ -465,7 +475,7 @@ def process_plate_to_df(plate_file,
     
     # reset for graph
     df = df_rowwise.sort(['orig_index'], ascending=[1])
-    
+        
     return df
 
 
@@ -476,6 +486,15 @@ def get_wells_dict_for_template(df):
     wells = t_df.T.to_dict().values()
 
     return wells
+
+
+def get_ab2_multiplier(df, max_ab2):
+      
+    mult = float(max_ab2) / 2.0
+    
+    df.loc[:,'ab2'] *= mult
+    
+    return df
 
 
 def process_exclusions(df, excl, nan=False):
@@ -560,6 +579,7 @@ def mean():
     
     prot_concentration_high = float(md[0]['prot_max'])
     coating_ab_max = float(md[0]['coating_ab_max'])  
+    ab2_max = float(md[0]['ab2_max'])
     
     df = get_mean_df_from_dir(APP_DATA, dirname)
 
@@ -568,12 +588,16 @@ def mean():
     # to pass through to plate (rowwise)
     # reset index, then transform, to dict
     wells = get_wells_dict_for_template(df)
+    
+    # exclude wells for graph
+    df_plot = df[:80]
+    get_ab2_multiplier(df, ab2_max)
 
     plots = list()
     for prot_conc in df.sort_values('prot').prot.unique():
         
-        if not df.empty:
-            p = get_plot_for_prot(df[(df.exclude == False)],
+        if not df_plot.empty:
+            p = get_plot_for_prot(df_plot[(df_plot.exclude == False)],
                                   md[0]['coating_ab'],
                                   md[0]['prot'],
                                   md[0]['ab2'],
@@ -625,11 +649,13 @@ def view():
     
     prot_concentration_high = float(md[0]['prot_max'])
     coating_ab_max = float(md[0]['coating_ab_max'])  
+    ab2_max = float(md[0]['ab2_max'])
     
     # DF PROCESSING 
     df = process_plate_to_df(plate_file,
                     prot_concentration_high,
-                    coating_ab_max)
+                    coating_ab_max,
+                    ab2_max)
 
     max_value = int(df['value'].max())
     
@@ -646,11 +672,15 @@ def view():
     # reset index, then transform, to dict
     wells = get_wells_dict_for_template(df)
 
+    # exclude wells for graph
+    df_plot = df[:80]
+    get_ab2_multiplier(df, ab2_max)
+    
     plots = list()
     for prot_conc in df.sort_values('prot').prot.unique():
         
-        if not df.empty:
-            p = get_plot_for_prot(df[(df.exclude == False)],
+        if not df_plot.empty:
+            p = get_plot_for_prot(df_plot[(df_plot.exclude == False)],
                                   md[0]['coating_ab'],
                                   md[0]['prot'],
                                   md[0]['ab2'],
@@ -733,6 +763,7 @@ def upload_file():
                        request.form.get('ab2_units'),
                        float(request.form.get('coating_ab_max')),
                        float(request.form.get('prot_max')),
+                       float(request.form.get('ab2_max')),
                        filenames,
                        request.form.get('name'))
         

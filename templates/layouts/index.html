@@ -149,7 +149,6 @@
       <span>Calculated Mean Values of each well. (Highlighted red values = Wells excluded from ALL plates).</span>
       
    {% endif %}
-    
       
     <ol id="selectable">
     <!-- woo! insane colour 'heat map' calculations -->
@@ -160,7 +159,10 @@
     {% endfor %}
     </ol>  
       
-    <div class="spacer" style="height: 350px;"></div>
+    <div class="spacer" style="height: 320px;"></div>
+      
+    <small>The last two columns are excluded from the graphs by default.</small>
+    <br/><br/>
     
     <!-- A simple form for changing the graph -->
     {% for p in plot_div %}
