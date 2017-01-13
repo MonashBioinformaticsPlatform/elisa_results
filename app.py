@@ -522,7 +522,10 @@ def process_exclusions(df, excl, nan=False):
     return df
 
 
-def get_mean_df_from_dir(APP_DATA, dirname):
+def get_mean_df_from_dir(APP_DATA, dirname,
+                    prot_concentration_high,
+                    coating_ab_max,
+                    ab2_max):
     
     dir_md = get_index(APP_DATA,dirname)
     
@@ -536,8 +539,11 @@ def get_mean_df_from_dir(APP_DATA, dirname):
     for plate_file in dir_md[0]['metadata']:
         full_filepath = '%s/%s' % (plate_dir, plate_file['filename'])
         #print(full_filepath)
-
-        df = process_plate_to_df(full_filepath, 1.0, 4.0)
+        
+        df = process_plate_to_df(full_filepath,
+                    prot_concentration_high,
+                    coating_ab_max,
+                    ab2_max)
 
         excl = list()
         excl = get_csv_exclude('%s.exc' % full_filepath)
@@ -581,7 +587,10 @@ def mean():
     coating_ab_max = float(md[0]['coating_ab_max'])  
     ab2_max = float(md[0]['ab2_max'])
     
-    df = get_mean_df_from_dir(APP_DATA, dirname)
+    df = get_mean_df_from_dir(APP_DATA, dirname,
+                             prot_concentration_high,
+                             coating_ab_max,
+                             ab2_max)
 
     max_value = int(df['value'].max())
         
